@@ -14,92 +14,92 @@ import tc.oc.pgm.api.player.MatchPlayer;
 
 @SuppressWarnings({"unchecked", "unused"})
 public class Replay {
-  private static long startTime = 0;
-  private static ReplayMeta meta;
-  private static boolean recording = false;
-  private static final LinkedHashSet<ReplayPacket> packets = new LinkedHashSet<>();
-  private static UUID recorderUUID;
-  private static final LinkedHashSet<PacketContainer> chunkPackets = new LinkedHashSet<>();
+  private long startTime = 0;
+  private ReplayMeta meta;
+  private boolean recording = false;
+  private final LinkedHashSet<ReplayPacket> packets = new LinkedHashSet<>();
+  private UUID recorderUUID;
+  private final LinkedHashSet<PacketContainer> chunkPackets = new LinkedHashSet<>();
   private static final AtomicInteger ENTITY_IDS = new AtomicInteger(Integer.MAX_VALUE);
 
-  public static void initalize() {
-    startTime = 0;
-    recording = false;
-    packets.clear();
-    chunkPackets.clear();
+  public Replay() {
+    this.startTime = 0;
+    this.recording = false;
+    this.packets.clear();
+    this.chunkPackets.clear();
     UUID uuid = UUID.randomUUID();
-    recorderUUID =
+    this.recorderUUID =
         new UUID(
             (uuid.getMostSignificantBits() & ~0xf000 | 0x2000), uuid.getLeastSignificantBits());
   }
 
-  public static boolean isRecording() {
-    return recording;
+  public boolean isRecording() {
+    return this.recording;
   }
 
-  public static void startRecording(Match match) {
-    startTime = System.currentTimeMillis();
+  public void startRecording(Match match) {
+    this.startTime = System.currentTimeMillis();
     int entityId = ENTITY_IDS.decrementAndGet();
 
-    addPacket(PacketCreator.createLoginSuccessPacket(recorderUUID));
-    addPacket(PacketCreator.createLoginPacket(match, entityId));
-    addPacket(PacketCreator.createPositionPacket(match.getWorld().getSpawnLocation()));
-    addPacket(PacketCreator.createSpawnPositionPacket(match.getWorld().getSpawnLocation()));
+    addPacket(PacketBuilder.createLoginSuccessPacket(this.recorderUUID));
+    addPacket(PacketBuilder.createLoginPacket(match, entityId));
+    addPacket(PacketBuilder.createPositionPacket(match.getWorld().getSpawnLocation()));
+    addPacket(PacketBuilder.createSpawnPositionPacket(match.getWorld().getSpawnLocation()));
 
-    recording = true;
+    this.recording = true;
 
-    chunkPackets.forEach((packet -> addPacket(packet)));
+    this.chunkPackets.forEach((packet -> addPacket(packet)));
 
-    addPacket(PacketCreator.createPlayerInfoPacket_AddPlayer(recorderUUID));
+    addPacket(PacketBuilder.createPlayerInfoPacket_AddPlayer(recorderUUID));
     addPacket(
-        PacketCreator.createNamedEntitySpawnPacket(
+        PacketBuilder.createNamedEntitySpawnPacket(
             entityId, recorderUUID, match.getWorld().getSpawnLocation()));
 
     match
         .getParties()
-        .forEach(party -> addPacket(PacketCreator.createScoreboardTeamPacket_Create(party)));
+        .forEach(party -> addPacket(PacketBuilder.createScoreboardTeamPacket_Create(party)));
   }
 
-  public static void stopRecording(Match match) {
-    meta =
+  public void stopRecording(Match match) {
+    this.meta =
         new ReplayMeta(match.getMap().getName(), System.currentTimeMillis() - startTime, startTime);
     try {
       BukkitTask createFile =
           new ReplayWriter(meta.getFile(), meta, (LinkedHashSet<ReplayPacket>) packets.clone())
-              .runTask(MatchRecorderPlugin.get());
+              .runTask(MatchRecorder.get());
     } catch (IOException e) {
-      MatchRecorderPlugin.get().getLogger().log(Level.SEVERE, "Failed to write", e);
+      MatchRecorder.get().getLogger().log(Level.SEVERE, "Failed to write", e);
     }
-    packets.clear();
-    chunkPackets.clear();
-    recording = false;
+    this.packets.clear();
+    this.chunkPackets.clear();
+    this.recording = false;
   }
 
-  public static void createPlayer(MatchPlayer player, Location location) {
+  public void createPlayer(MatchPlayer player, Location location) {
     addPacket(
-        PacketCreator.createPlayerInfoPacket_AddPlayer(
+        PacketBuilder.createPlayerInfoPacket_AddPlayer(
             EnumWrappers.PlayerInfoAction.ADD_PLAYER, player.getBukkit()));
     addPacket(
-        PacketCreator.createPlayerInfoPacket_UpdateGamemode(
+        PacketBuilder.createPlayerInfoPacket_UpdateGamemode(
             EnumWrappers.PlayerInfoAction.UPDATE_GAME_MODE, player.getBukkit()));
-    addPacket(PacketCreator.createNamedEntitySpawnPacket(player.getBukkit(), location));
-    addPacket(PacketCreator.createEntityMetadataPacket(player.getBukkit()));
-    addPacket(PacketCreator.createUpdateAttributesPacket(player.getBukkit()));
-    addPacket(PacketCreator.createEntityHeadRotationPacket(player.getBukkit()));
-    addPacket(PacketCreator.createScoreboardTeamPacket_AddPlayer(player, player.getParty()));
+    addPacket(PacketBuilder.createNamedEntitySpawnPacket(player.getBukkit(), location));
+    addPacket(PacketBuilder.createEntityMetadataPacket(player.getBukkit()));
+    addPacket(PacketBuilder.createUpdateAttributesPacket(player.getBukkit()));
+    addPacket(PacketBuilder.createEntityHeadRotationPacket(player.getBukkit()));
+    addPacket(PacketBuilder.createScoreboardTeamPacket_AddPlayer(player, player.getParty()));
   }
 
-  public static void removePlayer(MatchPlayer player) {
-    addPacket(PacketCreator.createEntityDestroyPacket(player.getBukkit()));
-    addPacket(PacketCreator.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
+  public void removePlayer(MatchPlayer player) {
+    addPacket(PacketBuilder.createEntityDestroyPacket(player.getBukkit()));
+    addPacket(PacketBuilder.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
   }
 
-  public static void addPacket(PacketContainer packet) {
+  public void addPacket(PacketContainer packet) {
     ReplayPacket pack = new ReplayPacket((int) (System.currentTimeMillis() - startTime), packet);
-    packets.add(pack);
+    this.packets.add(pack);
   }
 
-  public static void addChunkPacket(PacketContainer packet) {
-    chunkPackets.add(packet);
+  public void addChunkPacket(PacketContainer packet) {
+    this.chunkPackets.add(packet);
   }
 }

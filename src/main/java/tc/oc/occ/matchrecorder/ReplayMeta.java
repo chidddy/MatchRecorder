@@ -68,7 +68,7 @@ public class ReplayMeta implements Serializable {
 
   public File getFile() {
     return new File(
-        MatchRecorderPlugin.get().getReplayFolder(),
+        MatchRecorder.get().getReplayFolder(),
         this.name
             + "-"
             + new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date(this.date))

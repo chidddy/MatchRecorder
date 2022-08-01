@@ -2,6 +2,7 @@ package tc.oc.occ.matchrecorder;
 
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
+import com.comphenix.protocol.wrappers.AdventureComponentConverter;
 import com.comphenix.protocol.wrappers.BlockPosition;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.EnumWrappers.ChatType;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import net.kyori.adventure.text.Component;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
@@ -28,12 +30,13 @@ import tc.oc.pgm.api.party.Party;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @SuppressWarnings("deprecation")
-public class PacketCreator {
+public class PacketBuilder {
 
   public static final HashMap<PacketType, Integer> packetTypes = new HashMap<PacketType, Integer>();
 
   static {
     packetTypes.put(PacketType.Play.Server.LOGIN, 0x01);
+    packetTypes.put(PacketType.Play.Server.CHAT, 0x02);
     packetTypes.put(PacketType.Play.Server.UPDATE_TIME, 0x03);
     packetTypes.put(PacketType.Play.Server.ENTITY_EQUIPMENT, 0x04);
     packetTypes.put(PacketType.Play.Server.SPAWN_POSITION, 0x05);
@@ -117,6 +120,13 @@ public class PacketCreator {
   public static PacketContainer createChatPacket(String message) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.CHAT);
     packet.getChatComponents().write(0, WrappedChatComponent.fromLegacyText(message));
+    packet.getChatTypes().write(0, ChatType.SYSTEM);
+    return packet;
+  }
+
+  public static PacketContainer createChatPacket(Component message) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.CHAT);
+    packet.getChatComponents().write(0, AdventureComponentConverter.fromComponent(message));
     packet.getChatTypes().write(0, ChatType.SYSTEM);
     return packet;
   }

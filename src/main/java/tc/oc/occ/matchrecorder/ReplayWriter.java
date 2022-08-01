@@ -35,7 +35,7 @@ public class ReplayWriter extends BukkitRunnable {
     } catch (IOException e) {
       this.cancel();
     }
-    MatchRecorderPlugin.get().getLogger().log(Level.INFO, "finished writing");
+    MatchRecorder.get().getLogger().log(Level.INFO, "finished writing");
   }
 
   private void writeFile() throws IOException {
@@ -59,7 +59,7 @@ public class ReplayWriter extends BukkitRunnable {
 
   private void writeMeta(ReplayMeta meta) throws IOException {
     this.outputStream.putNextEntry(new ZipEntry("metaData.json"));
-    this.outputStream.write(MatchRecorderPlugin.GSON.toJson(meta, ReplayMeta.class).getBytes());
+    this.outputStream.write(MatchRecorder.GSON.toJson(meta, ReplayMeta.class).getBytes());
     this.outputStream.flush();
     this.outputStream.closeEntry();
   }

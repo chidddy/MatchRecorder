@@ -10,23 +10,28 @@ import tc.oc.occ.matchrecorder.Listeners.MatchListener;
 import tc.oc.occ.matchrecorder.Listeners.PacketListener;
 import tc.oc.occ.matchrecorder.Listeners.PlayerListener;
 
-public class MatchRecorderPlugin extends JavaPlugin implements Listener {
+public class MatchRecorder extends JavaPlugin implements Listener {
 
   public static final String PREFIX = "[MatchRecorder]";
-  private static MatchRecorderPlugin instance = null;
+  private static MatchRecorder instance = null;
   public static Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+  private Recorder recorder = null;
   private File replayFolder;
 
   @Override
   public void onEnable() {
     instance = this;
-    Replay.initalize();
+    this.recorder = new Recorder();
     registerEvents();
     this.replayFolder = new File(getDataFolder().getPath() + "/replays/");
   }
 
-  public static MatchRecorderPlugin get() {
+  public static MatchRecorder get() {
     return instance;
+  }
+
+  public Recorder getRecorder() {
+    return this.recorder;
   }
 
   public File getReplayFolder() {
@@ -34,8 +39,8 @@ public class MatchRecorderPlugin extends JavaPlugin implements Listener {
   }
 
   private void registerEvents() {
-    Bukkit.getPluginManager().registerEvents(new PlayerListener(), this);
-    Bukkit.getPluginManager().registerEvents(new MatchListener(), this);
+    Bukkit.getPluginManager().registerEvents(new PlayerListener(this.recorder), this);
+    Bukkit.getPluginManager().registerEvents(new MatchListener(this.recorder), this);
     Bukkit.getPluginManager().registerEvents(new PacketListener(this), this);
   }
 }

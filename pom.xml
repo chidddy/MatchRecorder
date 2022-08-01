@@ -16,7 +16,7 @@
       <maven.compiler.source>1.8</maven.compiler.source>
       <maven.compiler.target>1.8</maven.compiler.target>
       <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <project.bukkit.main>tc.oc.occ.matchrecorder.MatchRecorderPlugin</project.bukkit.main>
+      <project.bukkit.main>tc.oc.occ.matchrecorder.MatchRecorder</project.bukkit.main>
       <project.author>chiddy</project.author>
   </properties>
 

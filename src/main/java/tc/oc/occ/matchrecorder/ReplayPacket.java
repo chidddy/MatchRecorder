@@ -9,13 +9,18 @@ public class ReplayPacket extends WirePacket implements Serializable {
   private final PacketContainer packet;
 
   ReplayPacket(int time, PacketContainer packet) {
-    super(PacketCreator.getPacketID(packet.getType()), WirePacket.bytesFromPacket(packet));
+    super(PacketBuilder.getPacketID(packet.getType()), WirePacket.bytesFromPacket(packet));
     this.time = time;
     this.packet = packet;
   }
 
   public int getTime() {
     return this.time;
+  }
+
+  @Override
+  public int getId() {
+    return PacketBuilder.getPacketID(this.packet.getType());
   }
 
   @Override

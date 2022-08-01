@@ -14,29 +14,32 @@ import java.util.stream.Collectors;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.Listener;
-import tc.oc.occ.matchrecorder.MatchRecorderPlugin;
-import tc.oc.occ.matchrecorder.Replay;
+import tc.oc.occ.matchrecorder.MatchRecorder;
+import tc.oc.occ.matchrecorder.Recorder;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.player.MatchPlayer;
 
 @SuppressWarnings("deprecation")
 public class PacketListener extends PacketAdapter implements Listener {
+  private final Recorder recorder;
 
-  public PacketListener(MatchRecorderPlugin plugin) {
+  public PacketListener(MatchRecorder plugin) {
     super(plugin, ListenerPriority.MONITOR, getPacketTypes());
+    this.recorder = plugin.getRecorder();
     ProtocolLibrary.getProtocolManager().addPacketListener(this);
   }
 
   @Override
   public void onPacketSending(PacketEvent event) {
     PacketContainer packet = event.getPacket();
-    if (!Replay.isRecording()) {
+    if (!recorder.isRecording()) {
       if (packet.getType() == PacketType.Play.Server.MAP_CHUNK
           || packet.getType() == PacketType.Play.Server.MAP_CHUNK_BULK) {
-        Replay.addChunkPacket(packet);
+        recorder.addChunkPacket(packet);
       }
       return;
     }
+    // ! look at thread safety of this, potentially find better method
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
@@ -62,8 +65,17 @@ public class PacketListener extends PacketAdapter implements Listener {
           return;
         }
       }
+    } else if (packet.getType() == PacketType.Play.Server.ENTITY_DESTROY) {
+      Entity ent =
+          ProtocolLibrary.getProtocolManager()
+              .getEntityFromID(event.getPlayer().getWorld(), packet.getIntegerArrays().read(0)[0]);
+      if (ent != null) {
+        if (ent.getType() == EntityType.PLAYER) {
+          return;
+        }
+      }
     }
-    Replay.addPacket(packet);
+    recorder.addPacket(packet);
   }
 
   static Set<PacketType> getPacketTypes() {

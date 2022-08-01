@@ -6,14 +6,14 @@ import static net.kyori.adventure.text.Component.translatable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import tc.oc.occ.matchrecorder.PacketCreator;
-import tc.oc.occ.matchrecorder.Replay;
+import tc.oc.occ.matchrecorder.PacketBuilder;
+import tc.oc.occ.matchrecorder.Recorder;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
 import tc.oc.pgm.core.Core;
@@ -24,9 +24,15 @@ import tc.oc.pgm.goals.Contribution;
 import tc.oc.pgm.goals.ShowOption;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.text.TextFormatter;
+import tc.oc.pgm.util.text.TextTranslations;
 import tc.oc.pgm.wool.PlayerWoolPlaceEvent;
 
 public class MatchListener implements Listener {
+  private final Recorder recorder;
+
+  public MatchListener(Recorder recorder) {
+    this.recorder = recorder;
+  }
 
   // TODO:
   // ! [x] - start recording
@@ -34,7 +40,7 @@ public class MatchListener implements Listener {
   // ! [x] - create team packets
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchStart(MatchStartEvent event) {
-    Replay.startRecording(event.getMatch());
+    recorder.startRecording(event.getMatch());
   }
 
   // TODO:
@@ -42,7 +48,7 @@ public class MatchListener implements Listener {
   // ! [x] - remove all players
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchEnd(MatchFinishEvent event) {
-    Replay.stopRecording(event.getMatch());
+    recorder.stopRecording(event.getMatch());
   }
 
   // TODO:
@@ -50,15 +56,15 @@ public class MatchListener implements Listener {
   @EventHandler(priority = EventPriority.MONITOR)
   public void playerWoolPlace(final PlayerWoolPlaceEvent event) {
     if (!event.getWool().hasShowOption(ShowOption.SHOW_MESSAGES)) return;
-    String message =
-        LegacyComponentSerializer.legacySection()
-            .serialize(
-                translatable(
-                    "wool.complete.owned",
-                    event.getPlayer().getName(NameStyle.COLOR),
-                    event.getWool().getComponentName(),
-                    event.getPlayer().getParty().getName()));
-    Replay.addPacket(PacketCreator.createChatPacket(message));
+    Component message =
+        TextTranslations.translate(
+            translatable(
+                "wool.complete.owned",
+                event.getPlayer().getName(NameStyle.COLOR),
+                event.getWool().getComponentName(),
+                event.getPlayer().getParty().getName()),
+            Locale.ENGLISH);
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -66,15 +72,15 @@ public class MatchListener implements Listener {
     final Core core = event.getCore();
     if (!core.hasShowOption(ShowOption.SHOW_MESSAGES)) return;
 
-    String message =
-        LegacyComponentSerializer.legacySection()
-            .serialize(
-                translatable(
-                    "core.complete.owned",
-                    formatContributions(core.getContributions(), false),
-                    core.getComponentName(),
-                    core.getOwner().getName()));
-    Replay.addPacket(PacketCreator.createChatPacket(message));
+    Component message =
+        TextTranslations.translate(
+            translatable(
+                "core.complete.owned",
+                formatContributions(core.getContributions(), false),
+                core.getComponentName(),
+                core.getOwner().getName()),
+            Locale.ENGLISH);
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -82,15 +88,15 @@ public class MatchListener implements Listener {
     Destroyable destroyable = event.getDestroyable();
     if (!destroyable.hasShowOption(ShowOption.SHOW_MESSAGES)) return;
 
-    String message =
-        LegacyComponentSerializer.legacySection()
-            .serialize(
-                translatable(
-                    "core.complete.owned",
-                    formatContributions(event.getDestroyable().getContributions(), true),
-                    destroyable.getComponentName(),
-                    destroyable.getOwner().getName()));
-    Replay.addPacket(PacketCreator.createChatPacket(message));
+    Component message =
+        TextTranslations.translate(
+            translatable(
+                "core.complete.owned",
+                formatContributions(event.getDestroyable().getContributions(), true),
+                destroyable.getComponentName(),
+                destroyable.getOwner().getName()),
+            Locale.ENGLISH);
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
   // TODO:

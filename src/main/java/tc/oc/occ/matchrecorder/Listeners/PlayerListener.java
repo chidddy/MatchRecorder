@@ -1,5 +1,7 @@
 package tc.oc.occ.matchrecorder.Listeners;
 
+import java.util.Locale;
+import java.util.logging.Level;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
@@ -11,21 +13,27 @@ import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerVelocityEvent;
 import org.bukkit.util.Vector;
-import tc.oc.occ.matchrecorder.MatchRecorderPlugin;
-import tc.oc.occ.matchrecorder.PacketCreator;
-import tc.oc.occ.matchrecorder.Replay;
+import tc.oc.occ.matchrecorder.MatchRecorder;
+import tc.oc.occ.matchrecorder.PacketBuilder;
+import tc.oc.occ.matchrecorder.Recorder;
 import tc.oc.pgm.api.PGM;
 import tc.oc.pgm.api.player.MatchPlayer;
 import tc.oc.pgm.api.player.event.MatchPlayerDeathEvent;
 import tc.oc.pgm.death.DeathMessageBuilder;
 import tc.oc.pgm.spawns.events.ParticipantDespawnEvent;
 import tc.oc.pgm.spawns.events.ParticipantSpawnEvent;
+import tc.oc.pgm.util.text.TextTranslations;
 
 public class PlayerListener implements Listener {
+  private final Recorder recorder;
+
+  public PlayerListener(Recorder recorder) {
+    this.recorder = recorder;
+  }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerJoin(ParticipantSpawnEvent event) {
-    Replay.createPlayer(event.getPlayer(), event.getLocation());
+    recorder.createPlayer(event.getPlayer(), event.getLocation());
   }
 
   // TODO:
@@ -34,7 +42,7 @@ public class PlayerListener implements Listener {
   public void onPlayerLeave(ParticipantDespawnEvent event) {
     if (!event.getMatch().isRunning()) return;
     if (!event.getPlayer().isParticipating()) return;
-    Replay.removePlayer(event.getPlayer());
+    recorder.removePlayer(event.getPlayer());
   }
 
   // TODO:
@@ -48,24 +56,24 @@ public class PlayerListener implements Listener {
     if (player.isObserving()) return;
     if (event.getFrom().getYaw() != event.getTo().getYaw()) {
       // * head rotation
-      Replay.addPacket(
-          PacketCreator.createEntityHeadRotationPacket(event.getPlayer(), event.getTo().getYaw()));
+      recorder.addPacket(
+          PacketBuilder.createEntityHeadRotationPacket(event.getPlayer(), event.getTo().getYaw()));
     }
     Vector move = event.getTo().clone().subtract(event.getFrom()).toVector();
     if (isDifferent(event.getFrom(), event.getTo())) {
       // * position and look packet
-      Replay.addPacket(
-          PacketCreator.createRelativeEntityMoveLookPacket(
+      recorder.addPacket(
+          PacketBuilder.createRelativeEntityMoveLookPacket(
               event.getPlayer(), move, event.getTo().getYaw(), event.getTo().getPitch()));
 
     } else if (hasRotated(event.getFrom(), event.getTo())) {
       // * look packet
-      Replay.addPacket(
-          PacketCreator.createEntityLookPacket(
+      recorder.addPacket(
+          PacketBuilder.createEntityLookPacket(
               event.getPlayer(), event.getTo().getYaw(), event.getTo().getPitch()));
     } else {
       // * position packet
-      Replay.addPacket(PacketCreator.createRelativeEntityMovePacket(event.getPlayer(), move));
+      recorder.addPacket(PacketBuilder.createRelativeEntityMovePacket(event.getPlayer(), move));
     }
   }
 
@@ -74,36 +82,37 @@ public class PlayerListener implements Listener {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
-    Replay.addPacket(
-        PacketCreator.createEntityVelocityPacket(event.getPlayer(), event.getVelocity()));
+    recorder.addPacket(
+        PacketBuilder.createEntityVelocityPacket(event.getPlayer(), event.getVelocity()));
   }
 
   // TODO:
   // ! [x] make entity_equipment event for slot 0
+  // ! [x] fix inconsistency with getItemInHand(), find a new method to get more updated information
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerHeldChange(PlayerItemHeldEvent event) {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
     // held item
-    Replay.addPacket(
-        PacketCreator.createEntityEquipmentPacket(
-            event.getPlayer(), 0, event.getPlayer().getItemInHand()));
+    recorder.addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
+            event.getPlayer(), 0, event.getPlayer().getInventory().getItem(event.getNewSlot())));
     // helmet
-    Replay.addPacket(
-        PacketCreator.createEntityEquipmentPacket(
+    recorder.addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
             event.getPlayer(), 4, event.getPlayer().getEquipment().getHelmet()));
     // chestpiece
-    Replay.addPacket(
-        PacketCreator.createEntityEquipmentPacket(
+    recorder.addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
             event.getPlayer(), 3, event.getPlayer().getEquipment().getChestplate()));
     // legs
-    Replay.addPacket(
-        PacketCreator.createEntityEquipmentPacket(
+    recorder.addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
             event.getPlayer(), 2, event.getPlayer().getEquipment().getHelmet()));
     // boots
-    Replay.addPacket(
-        PacketCreator.createEntityEquipmentPacket(
+    recorder.addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
             event.getPlayer(), 1, event.getPlayer().getEquipment().getBoots()));
   }
 
@@ -121,11 +130,12 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
-    DeathMessageBuilder builder =
-        new DeathMessageBuilder(event, MatchRecorderPlugin.get().getLogger());
-    Component message = builder.getMessage().color(NamedTextColor.GRAY);
-    Replay.addPacket(
-        PacketCreator.createChatPacket(
-            LegacyComponentSerializer.legacySection().serialize(message)));
+    DeathMessageBuilder builder = new DeathMessageBuilder(event, MatchRecorder.get().getLogger());
+    Component message =
+        TextTranslations.translate(builder.getMessage().color(NamedTextColor.GRAY), Locale.ENGLISH);
+    MatchRecorder.get()
+        .getLogger()
+        .log(Level.INFO, LegacyComponentSerializer.legacySection().serialize(message));
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 }
