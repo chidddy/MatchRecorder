@@ -94,9 +94,6 @@ public class Replay {
     if (remove)
       addPacket(PacketBuilder.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
   }
-
-  // TODO:
-  // ! [x] fix on spawn first held item not showing correctly
   public void updatePlayerItems(Player player) {
     // held item
     addPacket(

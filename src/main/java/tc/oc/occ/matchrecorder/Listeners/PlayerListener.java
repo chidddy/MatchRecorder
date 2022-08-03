@@ -38,8 +38,6 @@ public class PlayerListener implements Listener {
     recorder.createPlayer(event.getPlayer(), event.getLocation());
   }
 
-  // TODO:
-  // ? [x] remove players on /obs
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerLeave(ParticipantDespawnEvent event) {
     if (!event.getMatch().isRunning()) return;
@@ -59,10 +57,6 @@ public class PlayerListener implements Listener {
         PacketBuilder.createAnimationPacket(player.getBukkit(), event.getAnimationType()));
   }
 
-  // TODO:
-  // ! [x] filter only participants
-  // ! [x] filter between move, movelook, velocity etc packets
-  // ! [x] construct and add packets
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(PlayerMoveEvent event) {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
@@ -114,9 +108,6 @@ public class PlayerListener implements Listener {
     recorder.addPacket(PacketBuilder.createEntityTeleportPacket(event));
   }
 
-  // TODO:
-  // ! [x] make entity_equipment event for slot 0
-  // ! [x] fix inconsistency with getItemInHand(), find a new method to get more updated information
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerHeldChange(PlayerItemHeldEvent event) {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());

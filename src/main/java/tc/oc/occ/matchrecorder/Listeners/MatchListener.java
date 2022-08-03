@@ -45,18 +45,11 @@ public class MatchListener implements Listener {
     this.recorder = recorder;
   }
 
-  // TODO:
-  // ! [x] - start recording
-  // ! [x] - add all players
-  // ! [x] - create team packets
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchStart(MatchStartEvent event) {
     recorder.startRecording(event.getMatch());
   }
 
-  // TODO:
-  // ! [x] - stop recording
-  // ! [x] - remove all players
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchEnd(MatchFinishEvent event) {
     Bukkit.getScheduler()
@@ -65,11 +58,9 @@ public class MatchListener implements Listener {
             () -> {
               recorder.stopRecording(event.getMatch());
             },
-            20);
+            60);
   }
 
-  // TODO:
-  // ! [x] - on wool touch message too
   @EventHandler(priority = EventPriority.MONITOR)
   public void playerWoolPlace(final PlayerWoolPlaceEvent event) {
     if (!event.getWool().hasShowOption(ShowOption.SHOW_MESSAGES)) return;
@@ -101,9 +92,6 @@ public class MatchListener implements Listener {
   }
 
   // TODO:
-  // ! [x] test lol
-  // ! [x] handle flag cap/hold messages
-  // ! [x] handle control point messages
   // ! [ ] handle scorebox messages (these likely arent possible with the current implementation of
   // scoreboxes)
   @EventHandler(priority = EventPriority.MONITOR)
