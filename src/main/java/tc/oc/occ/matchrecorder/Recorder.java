@@ -29,6 +29,10 @@ public class Recorder {
     replay.updatePlayerItems(player);
   }
 
+  public void updatePlayerItems(Player player, int slot) {
+    replay.updatePlayerItems(player, slot);
+  }
+
   public void removePlayer(MatchPlayer player, boolean remove) {
     replay.removePlayer(player, remove);
   }

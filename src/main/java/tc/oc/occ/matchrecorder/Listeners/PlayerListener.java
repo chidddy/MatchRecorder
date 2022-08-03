@@ -122,7 +122,7 @@ public class PlayerListener implements Listener {
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
-    recorder.updatePlayerItems(event.getPlayer());
+    recorder.updatePlayerItems(event.getPlayer(), event.getNewSlot());
   }
 
   private boolean isDifferent(Location one, Location two) {

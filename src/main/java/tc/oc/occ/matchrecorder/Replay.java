@@ -117,6 +117,25 @@ public class Replay {
         PacketBuilder.createEntityEquipmentPacket(player, 1, player.getEquipment().getBoots()));
   }
 
+  public void updatePlayerItems(Player player, int slot) {
+    // held item
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 0, player.getInventory().getItem(slot)));
+    // helmet
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 4, player.getEquipment().getHelmet()));
+    // chestpiece
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
+            player, 3, player.getEquipment().getChestplate()));
+    // legs
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 2, player.getEquipment().getHelmet()));
+    // boots
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 1, player.getEquipment().getBoots()));
+  }
+
   public void addPacket(PacketContainer packet) {
     ReplayPacket pack = new ReplayPacket((int) (System.currentTimeMillis() - startTime), packet);
     this.packets.add(pack);
