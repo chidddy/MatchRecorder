@@ -29,6 +29,8 @@ public class PacketListener extends PacketAdapter implements Listener {
     ProtocolLibrary.getProtocolManager().addPacketListener(this);
   }
 
+  // * onPacketSending is on the main thread, unless specified to be async, which it is not
+  // * onPacketReceiving is not on the main thread
   @Override
   public void onPacketSending(PacketEvent event) {
     PacketContainer packet = event.getPacket();
@@ -39,7 +41,6 @@ public class PacketListener extends PacketAdapter implements Listener {
       }
       return;
     }
-    // ! look at thread safety of this, potentially find better method
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
@@ -58,7 +59,9 @@ public class PacketListener extends PacketAdapter implements Listener {
         || packet.getType() == PacketType.Play.Server.REL_ENTITY_MOVE_LOOK
         || packet.getType() == PacketType.Play.Server.ENTITY_LOOK
         || packet.getType() == PacketType.Play.Server.ENTITY_HEAD_ROTATION
-        || packet.getType() == PacketType.Play.Server.ENTITY_VELOCITY) {
+        || packet.getType() == PacketType.Play.Server.ENTITY_VELOCITY
+        || packet.getType() == PacketType.Play.Server.ENTITY_TELEPORT
+        || packet.getType() == PacketType.Play.Server.ANIMATION) {
       Entity ent = packet.getEntityModifier(event.getPlayer().getWorld()).read(0);
       if (ent != null) {
         if (ent.getType() == EntityType.PLAYER) {

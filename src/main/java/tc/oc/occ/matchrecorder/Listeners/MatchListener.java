@@ -9,22 +9,33 @@ import java.util.List;
 import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import tc.oc.occ.matchrecorder.MatchRecorder;
 import tc.oc.occ.matchrecorder.PacketBuilder;
 import tc.oc.occ.matchrecorder.Recorder;
 import tc.oc.pgm.api.match.event.MatchFinishEvent;
 import tc.oc.pgm.api.match.event.MatchStartEvent;
+import tc.oc.pgm.controlpoint.events.ControllerChangeEvent;
 import tc.oc.pgm.core.Core;
 import tc.oc.pgm.core.CoreLeakEvent;
 import tc.oc.pgm.destroyable.Destroyable;
 import tc.oc.pgm.destroyable.DestroyableDestroyedEvent;
+import tc.oc.pgm.flag.Flag;
+import tc.oc.pgm.flag.event.FlagCaptureEvent;
+import tc.oc.pgm.flag.event.FlagStateChangeEvent;
+import tc.oc.pgm.flag.state.Dropped;
+import tc.oc.pgm.flag.state.Returned;
 import tc.oc.pgm.goals.Contribution;
 import tc.oc.pgm.goals.ShowOption;
+import tc.oc.pgm.goals.events.GoalTouchEvent;
+import tc.oc.pgm.modes.ObjectiveModeChangeEvent;
 import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.text.TextFormatter;
 import tc.oc.pgm.util.text.TextTranslations;
+import tc.oc.pgm.wool.MonumentWool;
 import tc.oc.pgm.wool.PlayerWoolPlaceEvent;
 
 public class MatchListener implements Listener {
@@ -48,11 +59,17 @@ public class MatchListener implements Listener {
   // ! [x] - remove all players
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchEnd(MatchFinishEvent event) {
-    recorder.stopRecording(event.getMatch());
+    Bukkit.getScheduler()
+        .runTaskLater(
+            MatchRecorder.get(),
+            () -> {
+              recorder.stopRecording(event.getMatch());
+            },
+            20);
   }
 
   // TODO:
-  // ! [ ] - on wool touch message too
+  // ! [x] - on wool touch message too
   @EventHandler(priority = EventPriority.MONITOR)
   public void playerWoolPlace(final PlayerWoolPlaceEvent event) {
     if (!event.getWool().hasShowOption(ShowOption.SHOW_MESSAGES)) return;
@@ -83,6 +100,46 @@ public class MatchListener implements Listener {
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
+  // TODO:
+  // ! [x] test lol
+  // ! [x] handle flag cap/hold messages
+  // ! [x] handle control point messages
+  // ! [ ] handle scorebox messages (these likely arent possible with the current implementation of
+  // scoreboxes)
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void goalTouch(GoalTouchEvent event) {
+    if (event.getGoal().isCompleted()) return;
+    Component message = null;
+    if (event.getGoal() instanceof MonumentWool) {
+      message =
+          TextTranslations.translate(
+              translatable(
+                  "destroyable.touch.owned.player",
+                  event.getPlayer().getName(NameStyle.COLOR),
+                  event.getGoal().getComponentName(),
+                  event.getGoal().getOwner().getName()),
+              Locale.ENGLISH);
+    } else if (event.getGoal() instanceof Flag) {
+      message =
+          TextTranslations.translate(
+              translatable(
+                  "flag.touch.player",
+                  event.getGoal().getComponentName(),
+                  event.getPlayer().getName(NameStyle.COLOR)),
+              Locale.ENGLISH);
+    } else {
+      message =
+          TextTranslations.translate(
+              translatable(
+                  "destroyable.touch.owned.player",
+                  event.getPlayer().getName(NameStyle.COLOR),
+                  event.getGoal().getComponentName(),
+                  event.getGoal().getOwner().getName()),
+              Locale.ENGLISH);
+    }
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
+  }
+
   @EventHandler(priority = EventPriority.MONITOR)
   public void destroyableDestroyed(final DestroyableDestroyedEvent event) {
     Destroyable destroyable = event.getDestroyable();
@@ -91,10 +148,68 @@ public class MatchListener implements Listener {
     Component message =
         TextTranslations.translate(
             translatable(
-                "core.complete.owned",
+                "destroyable.complete.owned",
                 formatContributions(event.getDestroyable().getContributions(), true),
                 destroyable.getComponentName(),
                 destroyable.getOwner().getName()),
+            Locale.ENGLISH);
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onModeSwitch(ObjectiveModeChangeEvent event) {
+    if (!event.isVisible()) return;
+    Component message =
+        text()
+            .append(text("> > > > ", NamedTextColor.DARK_AQUA))
+            .append(text(event.getName(), NamedTextColor.DARK_RED))
+            .append(text(" < < < <", NamedTextColor.DARK_AQUA))
+            .build();
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onControlPointCapture(ControllerChangeEvent event) {
+    if (event.getNewController() != null) {
+      recorder.addPacket(
+          PacketBuilder.createChatPacket(
+              text()
+                  .append(event.getNewController().getName())
+                  .append(
+                      text(" captured ", NamedTextColor.GRAY)
+                          .append(
+                              text(
+                                  event.getControlPoint().getName(),
+                                  TextFormatter.convert(event.getNewController().getColor()))))
+                  .build()));
+    }
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onFlagStateChange(FlagStateChangeEvent event) {
+    Component message = null;
+    if (event.getNewState() instanceof Dropped) {
+      message =
+          TextTranslations.translate(
+              translatable("flag.drop", event.getFlag().getComponentName()), Locale.ENGLISH);
+    } else if (event.getNewState() instanceof Returned) {
+      message =
+          TextTranslations.translate(
+              translatable("flag.respawn", event.getFlag().getComponentName()), Locale.ENGLISH);
+    } else {
+      return;
+    }
+    recorder.addPacket(PacketBuilder.createChatPacket(message));
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onFlagCapture(FlagCaptureEvent event) {
+    Component message =
+        TextTranslations.translate(
+            translatable(
+                "flag.capture.player",
+                event.getGoal().getComponentName(),
+                event.getCarrier().getName(NameStyle.COLOR)),
             Locale.ENGLISH);
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }

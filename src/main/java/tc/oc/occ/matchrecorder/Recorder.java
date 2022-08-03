@@ -2,6 +2,7 @@ package tc.oc.occ.matchrecorder;
 
 import com.comphenix.protocol.events.PacketContainer;
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
 
@@ -24,8 +25,12 @@ public class Recorder {
     replay.createPlayer(player, location);
   }
 
-  public void removePlayer(MatchPlayer player) {
-    replay.removePlayer(player);
+  public void updatePlayerItems(Player player) {
+    replay.updatePlayerItems(player);
+  }
+
+  public void removePlayer(MatchPlayer player, boolean remove) {
+    replay.removePlayer(player, remove);
   }
 
   public void addPacket(PacketContainer packet) {
@@ -34,5 +39,9 @@ public class Recorder {
 
   public void addChunkPacket(PacketContainer packet) {
     replay.addChunkPacket(packet);
+  }
+
+  public void killPlayer(MatchPlayer player) {
+    replay.killPlayer(player);
   }
 }

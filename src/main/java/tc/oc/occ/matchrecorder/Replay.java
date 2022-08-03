@@ -7,8 +7,9 @@ import java.util.LinkedHashSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.scheduler.BukkitTask;
+import org.bukkit.entity.Player;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
 
@@ -64,9 +65,8 @@ public class Replay {
     this.meta =
         new ReplayMeta(match.getMap().getName(), System.currentTimeMillis() - startTime, startTime);
     try {
-      BukkitTask createFile =
-          new ReplayWriter(meta.getFile(), meta, (LinkedHashSet<ReplayPacket>) packets.clone())
-              .runTask(MatchRecorder.get());
+      new ReplayWriter(meta.getFile(), meta, (LinkedHashSet<ReplayPacket>) packets.clone())
+          .runTask(MatchRecorder.get());
     } catch (IOException e) {
       MatchRecorder.get().getLogger().log(Level.SEVERE, "Failed to write", e);
     }
@@ -89,9 +89,32 @@ public class Replay {
     addPacket(PacketBuilder.createScoreboardTeamPacket_AddPlayer(player, player.getParty()));
   }
 
-  public void removePlayer(MatchPlayer player) {
+  public void removePlayer(MatchPlayer player, boolean remove) {
     addPacket(PacketBuilder.createEntityDestroyPacket(player.getBukkit()));
-    addPacket(PacketBuilder.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
+    if (remove)
+      addPacket(PacketBuilder.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
+  }
+
+  // TODO:
+  // ! [x] fix on spawn first held item not showing correctly
+  public void updatePlayerItems(Player player) {
+    // held item
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
+            player, 0, player.getInventory().getItem(player.getInventory().getHeldItemSlot())));
+    // helmet
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 4, player.getEquipment().getHelmet()));
+    // chestpiece
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(
+            player, 3, player.getEquipment().getChestplate()));
+    // legs
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 2, player.getEquipment().getHelmet()));
+    // boots
+    addPacket(
+        PacketBuilder.createEntityEquipmentPacket(player, 1, player.getEquipment().getBoots()));
   }
 
   public void addPacket(PacketContainer packet) {
@@ -101,5 +124,16 @@ public class Replay {
 
   public void addChunkPacket(PacketContainer packet) {
     this.chunkPackets.add(packet);
+  }
+
+  public void killPlayer(MatchPlayer player) {
+    addPacket(PacketBuilder.createEntityMetadataPacket_Dead(player.getBukkit()));
+    Bukkit.getScheduler()
+        .runTaskLaterAsynchronously(
+            MatchRecorder.get(),
+            () -> {
+              removePlayer(player, false);
+            },
+            15);
   }
 }

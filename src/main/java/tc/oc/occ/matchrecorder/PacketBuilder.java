@@ -14,15 +14,23 @@ import com.comphenix.protocol.wrappers.WrappedGameProfile;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.kyori.adventure.text.Component;
+import net.minecraft.server.v1_8_R3.MathHelper;
+import net.minecraft.server.v1_8_R3.PacketPlayOutMapChunk;
+import net.minecraft.server.v1_8_R3.PacketPlayOutMapChunkBulk;
 import org.bukkit.Bukkit;
+import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.craftbukkit.v1_8_R3.CraftChunk;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.player.PlayerAnimationType;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.Vector;
 import tc.oc.pgm.api.match.Match;
@@ -166,6 +174,13 @@ public class PacketBuilder {
     return packet;
   }
 
+  public static PacketContainer createAnimationPacket(Player player, PlayerAnimationType anim) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.ANIMATION);
+    packet.getIntegers().write(0, player.getEntityId());
+    packet.getIntegers().write(1, anim.ordinal());
+    return packet;
+  }
+
   public static PacketContainer createNamedEntitySpawnPacket(MatchPlayer entity) {
     return createNamedEntitySpawnPacket(entity.getBukkit(), entity.getLocation());
   }
@@ -238,18 +253,19 @@ public class PacketBuilder {
 
   public static PacketContainer createEntityDestroyPacket(Entity entity) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_DESTROY);
-    packet.getIntegerArrays().write(0, new int[entity.getEntityId()]);
+    packet.getIntegerArrays().write(0, new int[] {entity.getEntityId()});
     return packet;
   }
 
-  public static PacketContainer createRelativeEntityMovePacket(Entity entity, Vector move) {
+  public static PacketContainer createRelativeEntityMovePacket(
+      Entity entity, Location from, Location to) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.REL_ENTITY_MOVE);
     packet.getIntegers().write(0, entity.getEntityId());
     packet
         .getBytes()
-        .write(0, (byte) toFixedPoint(move.getX()))
-        .write(1, (byte) toFixedPoint(move.getY()))
-        .write(2, (byte) toFixedPoint(move.getZ()));
+        .write(0, (byte) (toFixedPoint(to.getX()) - toFixedPoint(from.getX())))
+        .write(1, (byte) (toFixedPoint(to.getY()) - toFixedPoint(from.getY())))
+        .write(2, (byte) (toFixedPoint(to.getZ()) - toFixedPoint(from.getZ())));
     packet.getBooleans().write(0, entity.isOnGround());
     return packet;
   }
@@ -263,14 +279,14 @@ public class PacketBuilder {
   }
 
   public static PacketContainer createRelativeEntityMoveLookPacket(
-      Entity entity, Vector move, float yaw, float pitch) {
+      Entity entity, Location from, Location to, float yaw, float pitch) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK);
     packet.getIntegers().write(0, entity.getEntityId());
     packet
         .getBytes()
-        .write(0, (byte) toFixedPoint(move.getX()))
-        .write(1, (byte) toFixedPoint(move.getY()))
-        .write(2, (byte) toFixedPoint(move.getZ()))
+        .write(0, (byte) (toFixedPoint(to.getX()) - toFixedPoint(from.getX())))
+        .write(1, (byte) (toFixedPoint(to.getY()) - toFixedPoint(from.getY())))
+        .write(2, (byte) (toFixedPoint(to.getZ()) - toFixedPoint(from.getZ())))
         .write(3, toAngle(yaw))
         .write(4, toAngle(pitch));
     packet.getBooleans().write(0, entity.isOnGround());
@@ -290,6 +306,22 @@ public class PacketBuilder {
         .write(0, toAngle(event.getTo().getYaw()))
         .write(1, toAngle(event.getTo().getPitch()));
     packet.getBooleans().write(0, event.getEntity().isOnGround());
+    return packet;
+  }
+
+  public static PacketContainer createEntityTeleportPacket(PlayerTeleportEvent event) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_TELEPORT);
+    packet
+        .getIntegers()
+        .write(0, event.getPlayer().getEntityId())
+        .write(1, toFixedPoint(event.getTo().getX()))
+        .write(2, toFixedPoint(event.getTo().getY()))
+        .write(3, toFixedPoint(event.getTo().getZ()));
+    packet
+        .getBytes()
+        .write(0, toAngle(event.getTo().getYaw()))
+        .write(1, toAngle(event.getTo().getPitch()));
+    packet.getBooleans().write(0, event.getPlayer().isOnGround());
     return packet;
   }
 
@@ -317,7 +349,28 @@ public class PacketBuilder {
     wdw.setObject(3, (byte) 0);
     wdw.setObject(4, (byte) 0);
     wdw.setObject(6, (float) 20.0);
-    wdw.setObject(7, 127);
+    wdw.setObject(7, 0);
+    wdw.setObject(8, (byte) 0);
+    wdw.setObject(9, (byte) 0);
+    wdw.setObject(10, (byte) 0);
+    wdw.setObject(16, (byte) 0);
+    wdw.setObject(17, (float) 0);
+    wdw.setObject(18, 0);
+    packet.getWatchableCollectionModifier().write(0, wdw.getWatchableObjects());
+    return packet;
+  }
+
+  public static PacketContainer createEntityMetadataPacket_Dead(Entity entity) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
+    packet.getIntegers().write(0, entity.getEntityId());
+    WrappedDataWatcher wdw = new WrappedDataWatcher(entity);
+    wdw.setObject(0, (byte) 0);
+    wdw.setObject(1, 300);
+    wdw.setObject(2, "");
+    wdw.setObject(3, (byte) 0);
+    wdw.setObject(4, (byte) 0);
+    wdw.setObject(6, (float) 0.0);
+    wdw.setObject(7, 0);
     wdw.setObject(8, (byte) 0);
     wdw.setObject(9, (byte) 0);
     wdw.setObject(10, (byte) 0);
@@ -484,6 +537,19 @@ public class PacketBuilder {
     return packet;
   }
 
+  public static PacketContainer createMapChunkPacket(Chunk chunk) {
+    net.minecraft.server.v1_8_R3.Chunk rawChunk = ((CraftChunk) chunk).getHandle();
+    PacketPlayOutMapChunk rawPacket = new PacketPlayOutMapChunk(rawChunk, true, 0);
+    return PacketContainer.fromPacket(rawPacket);
+  }
+
+  public static PacketContainer createMapChunkBulkPacket(List<Chunk> chunks) {
+    List<net.minecraft.server.v1_8_R3.Chunk> rawChunks =
+        chunks.stream().map(chunk -> ((CraftChunk) chunk).getHandle()).collect(Collectors.toList());
+    PacketPlayOutMapChunkBulk rawPacket = new PacketPlayOutMapChunkBulk(rawChunks);
+    return PacketContainer.fromPacket(rawPacket);
+  }
+
   private static String toShortName(String legacyName) {
     String lower = legacyName.toLowerCase();
     if (lower.endsWith(" team")) {
@@ -496,11 +562,11 @@ public class PacketBuilder {
   }
 
   private static int toFixedPoint(double val) {
-    return (int) Math.round(val * 32.0D);
+    return (int) MathHelper.floor(val * 32.0D);
   }
 
   private static byte toAngle(float val) {
-    return (byte) (val * 256F / 360F);
+    return (byte) ((int) (val * 256.0F / 360.0F));
   }
 
   private static int toVelocity(double val) {
