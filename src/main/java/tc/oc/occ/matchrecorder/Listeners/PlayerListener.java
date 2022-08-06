@@ -11,9 +11,12 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerAnimationEvent;
 import org.bukkit.event.player.PlayerItemHeldEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
 import org.bukkit.event.player.PlayerVelocityEvent;
+import org.spigotmc.event.entity.EntityDismountEvent;
+import org.spigotmc.event.entity.EntityMountEvent;
 import tc.oc.occ.matchrecorder.MatchRecorder;
 import tc.oc.occ.matchrecorder.PacketBuilder;
 import tc.oc.occ.matchrecorder.Recorder;
@@ -35,12 +38,13 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerJoin(ParticipantSpawnEvent event) {
+    if (!recorder.isRecording()) return;
     recorder.createPlayer(event.getPlayer(), event.getLocation());
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerLeave(ParticipantDespawnEvent event) {
-    if (!event.getMatch().isRunning()) return;
+    if (!event.getMatch().isRunning() || !recorder.isRecording()) return;
     if (event.getPlayer().isDead()) {
       recorder.killPlayer(event.getPlayer());
     } else {
@@ -50,18 +54,20 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerAnimation(PlayerAnimationEvent event) {
+    if (!recorder.isRecording()) return;
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
-    if (player.isObserving()) return;
+    if (player.isObserving() || player.isDead()) return;
     recorder.addPacket(
         PacketBuilder.createAnimationPacket(player.getBukkit(), event.getAnimationType()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerMove(PlayerMoveEvent event) {
+    if (!recorder.isRecording()) return;
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
-    if (player.isObserving()) return;
+    if (player.isObserving() || player.isDead()) return;
     if (event.getFrom().getYaw() != event.getTo().getYaw()) {
       // * head rotation
       recorder.addPacket(
@@ -92,15 +98,17 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerVelocity(PlayerVelocityEvent event) {
+    if (!recorder.isRecording()) return;
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
-    if (player.isObserving()) return;
+    if (player.isObserving() || player.isDead()) return;
     recorder.addPacket(
         PacketBuilder.createEntityVelocityPacket(event.getPlayer(), event.getVelocity()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerTeleport(PlayerTeleportEvent event) {
+    if (!recorder.isRecording()) return;
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
@@ -108,12 +116,40 @@ public class PlayerListener implements Listener {
     recorder.addPacket(PacketBuilder.createEntityTeleportPacket(event));
   }
 
+  @EventHandler(priority = EventPriority.NORMAL)
+  public void onPlayerRide(EntityMountEvent event) {
+    if (!recorder.isRecording()) return;
+    MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getEntity());
+    if (player == null) return;
+    if (player.isObserving() || player.isDead()) return;
+    recorder.addPacket(PacketBuilder.createAttachEntityPacket(event.getEntity(), event.getMount()));
+  }
+
+  @EventHandler(priority = EventPriority.NORMAL)
+  public void onPlayerDismount(EntityDismountEvent event) {
+    if (!recorder.isRecording()) return;
+    MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getEntity());
+    if (player == null) return;
+    if (player.isObserving() || player.isDead()) return;
+    recorder.addPacket(PacketBuilder.createAttachEntityPacket_Dismount(event.getEntity()));
+  }
+
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerHeldChange(PlayerItemHeldEvent event) {
+    if (!recorder.isRecording()) return;
+    MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
+    if (player == null) return;
+    if (player.isObserving() || player.isDead()) return;
+    recorder.updatePlayerItems(event.getPlayer(), event.getNewSlot());
+  }
+
+  @EventHandler(priority = EventPriority.MONITOR)
+  public void onPlayerPickup(PlayerPickupItemEvent event) {
+    if (!recorder.isRecording()) return;
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
-    recorder.updatePlayerItems(event.getPlayer(), event.getNewSlot());
+    recorder.addPacket(PacketBuilder.createCollectPacket(event.getPlayer(), event.getItem()));
   }
 
   private boolean isDifferent(Location one, Location two) {
@@ -130,6 +166,7 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
+    if (!recorder.isRecording()) return;
     DeathMessageBuilder builder = new DeathMessageBuilder(event, MatchRecorder.get().getLogger());
     Component message =
         TextTranslations.translate(builder.getMessage().color(NamedTextColor.GRAY), Locale.ENGLISH);
@@ -138,6 +175,7 @@ public class PlayerListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onKitApply(ApplyKitEvent event) {
+    if (!recorder.isRecording()) return;
     if (event.getPlayer().isDead()) return;
     if (event.getPlayer().isObserving()) return;
     Bukkit.getScheduler()

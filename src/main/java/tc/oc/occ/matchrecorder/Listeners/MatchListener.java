@@ -63,6 +63,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void playerWoolPlace(final PlayerWoolPlaceEvent event) {
+    if (!recorder.isRecording()) return;
     if (!event.getWool().hasShowOption(ShowOption.SHOW_MESSAGES)) return;
     Component message =
         TextTranslations.translate(
@@ -77,6 +78,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void coreLeak(final CoreLeakEvent event) {
+    if (!recorder.isRecording()) return;
     final Core core = event.getCore();
     if (!core.hasShowOption(ShowOption.SHOW_MESSAGES)) return;
 
@@ -96,6 +98,7 @@ public class MatchListener implements Listener {
   // scoreboxes)
   @EventHandler(priority = EventPriority.MONITOR)
   public void goalTouch(GoalTouchEvent event) {
+    if (!recorder.isRecording()) return;
     if (event.getGoal().isCompleted()) return;
     Component message = null;
     if (event.getGoal() instanceof MonumentWool) {
@@ -130,6 +133,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void destroyableDestroyed(final DestroyableDestroyedEvent event) {
+    if (!recorder.isRecording()) ;
     Destroyable destroyable = event.getDestroyable();
     if (!destroyable.hasShowOption(ShowOption.SHOW_MESSAGES)) return;
 
@@ -146,6 +150,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onModeSwitch(ObjectiveModeChangeEvent event) {
+    if (!recorder.isRecording()) return;
     if (!event.isVisible()) return;
     Component message =
         text()
@@ -158,6 +163,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onControlPointCapture(ControllerChangeEvent event) {
+    if (!recorder.isRecording()) return;
     if (event.getNewController() != null) {
       recorder.addPacket(
           PacketBuilder.createChatPacket(
@@ -175,6 +181,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onFlagStateChange(FlagStateChangeEvent event) {
+    if (!recorder.isRecording()) return;
     Component message = null;
     if (event.getNewState() instanceof Dropped) {
       message =
@@ -192,6 +199,7 @@ public class MatchListener implements Listener {
 
   @EventHandler(priority = EventPriority.MONITOR)
   public void onFlagCapture(FlagCaptureEvent event) {
+    if (!recorder.isRecording()) return;
     Component message =
         TextTranslations.translate(
             translatable(

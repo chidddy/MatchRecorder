@@ -29,40 +29,34 @@ public class PacketListener extends PacketAdapter implements Listener {
     ProtocolLibrary.getProtocolManager().addPacketListener(this);
   }
 
-  // * onPacketSending is on the main thread, unless specified to be async, which it is not
+  // * onPacketSending is on the main thread, unless specified to be async, which it is not set to
+  // be async here
   // * onPacketReceiving is not on the main thread
   @Override
   public void onPacketSending(PacketEvent event) {
+    if (!recorder.isRecording()) return;
     PacketContainer packet = event.getPacket();
-    if (!recorder.isRecording()) {
-      if (packet.getType() == PacketType.Play.Server.MAP_CHUNK
-          || packet.getType() == PacketType.Play.Server.MAP_CHUNK_BULK) {
-        recorder.addChunkPacket(packet);
-      }
-      return;
-    }
     MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
     if (player == null) return;
     if (player.isObserving()) return;
 
-    if (packet.getType() == PacketType.Play.Server.NAMED_ENTITY_SPAWN) return;
-    if (packet.getType() == PacketType.Play.Server.MAP_CHUNK) return;
-    if (packet.getType() == PacketType.Play.Server.MAP_CHUNK_BULK) return;
+    // TODO:
     if (packet.getType() == PacketType.Play.Server.SCOREBOARD_TEAM
         || packet.getType() == PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE
         || packet.getType() == PacketType.Play.Server.SCOREBOARD_SCORE
         || packet.getType() == PacketType.Play.Server.SCOREBOARD_OBJECTIVE) {
       return;
     }
-    // ? add teleport to this list?
+
     if (packet.getType() == PacketType.Play.Server.REL_ENTITY_MOVE
         || packet.getType() == PacketType.Play.Server.REL_ENTITY_MOVE_LOOK
         || packet.getType() == PacketType.Play.Server.ENTITY_LOOK
         || packet.getType() == PacketType.Play.Server.ENTITY_HEAD_ROTATION
         || packet.getType() == PacketType.Play.Server.ENTITY_VELOCITY
         || packet.getType() == PacketType.Play.Server.ENTITY_TELEPORT
-        || packet.getType() == PacketType.Play.Server.ANIMATION) {
-      Entity ent = packet.getEntityModifier(event.getPlayer().getWorld()).read(0);
+        || packet.getType() == PacketType.Play.Server.ANIMATION
+        || packet.getType() == PacketType.Play.Server.ATTACH_ENTITY) {
+      Entity ent = packet.getEntityModifier(player.getWorld()).read(0);
       if (ent != null) {
         if (ent.getType() == EntityType.PLAYER) {
           return;
@@ -71,9 +65,9 @@ public class PacketListener extends PacketAdapter implements Listener {
     } else if (packet.getType() == PacketType.Play.Server.ENTITY_DESTROY) {
       Entity ent =
           ProtocolLibrary.getProtocolManager()
-              .getEntityFromID(event.getPlayer().getWorld(), packet.getIntegerArrays().read(0)[0]);
+              .getEntityFromID(player.getWorld(), packet.getIntegerArrays().read(0)[0]);
       if (ent != null) {
-        if (ent.getType() == EntityType.PLAYER) {
+        if (ent.getType() == EntityType.PLAYER || !ent.isDead()) {
           return;
         }
       }
@@ -93,15 +87,15 @@ public class PacketListener extends PacketAdapter implements Listener {
                 PacketType.Play.Server.REL_ENTITY_MOVE,
                 PacketType.Play.Server.REL_ENTITY_MOVE_LOOK,
                 PacketType.Play.Server.ENTITY_LOOK,
-                PacketType.Play.Server.MAP_CHUNK,
-                PacketType.Play.Server.MAP_CHUNK_BULK,
-                PacketType.Play.Server.WORLD_BORDER,
+                // PacketType.Play.Server.MAP_CHUNK,
+                // PacketType.Play.Server.MAP_CHUNK_BULK,
+                // PacketType.Play.Server.WORLD_BORDER,
                 PacketType.Play.Server.WORLD_PARTICLES,
                 PacketType.Play.Server.WORLD_EVENT,
                 PacketType.Play.Server.NAMED_SOUND_EFFECT,
                 PacketType.Play.Server.UPDATE_TIME,
-                PacketType.Play.Server.COLLECT,
-                PacketType.Play.Server.NAMED_ENTITY_SPAWN,
+                // PacketType.Play.Server.COLLECT,
+                // PacketType.Play.Server.NAMED_ENTITY_SPAWN,
                 PacketType.Play.Server.SPAWN_ENTITY,
                 PacketType.Play.Server.SPAWN_ENTITY_EXPERIENCE_ORB,
                 PacketType.Play.Server.SPAWN_ENTITY_LIVING,

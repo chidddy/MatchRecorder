@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
 
-@SuppressWarnings({"unchecked", "unused"})
+@SuppressWarnings({"unchecked"})
 public class Replay {
   private long startTime = 0;
   private ReplayMeta meta;
@@ -52,9 +52,6 @@ public class Replay {
     this.chunkPackets.forEach((packet -> addPacket(packet)));
 
     addPacket(PacketBuilder.createPlayerInfoPacket_AddPlayer(recorderUUID));
-    addPacket(
-        PacketBuilder.createNamedEntitySpawnPacket(
-            entityId, recorderUUID, match.getWorld().getSpawnLocation()));
 
     match
         .getParties()
@@ -94,6 +91,7 @@ public class Replay {
     if (remove)
       addPacket(PacketBuilder.createScoreboardTeamPacket_RemovePlayer(player, player.getParty()));
   }
+
   public void updatePlayerItems(Player player) {
     // held item
     addPacket(
@@ -142,10 +140,14 @@ public class Replay {
     this.chunkPackets.add(packet);
   }
 
+  public void clearChunks() {
+    this.chunkPackets.clear();
+  }
+
   public void killPlayer(MatchPlayer player) {
     addPacket(PacketBuilder.createEntityMetadataPacket_Dead(player.getBukkit()));
     Bukkit.getScheduler()
-        .runTaskLaterAsynchronously(
+        .runTaskLater(
             MatchRecorder.get(),
             () -> {
               removePlayer(player, false);

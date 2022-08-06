@@ -45,6 +45,10 @@ public class Recorder {
     replay.addChunkPacket(packet);
   }
 
+  public void chearChunks() {
+    replay.clearChunks();
+  }
+
   public void killPlayer(MatchPlayer player) {
     replay.killPlayer(player);
   }

@@ -4,10 +4,13 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.AdventureComponentConverter;
 import com.comphenix.protocol.wrappers.BlockPosition;
+import com.comphenix.protocol.wrappers.ChunkCoordIntPair;
 import com.comphenix.protocol.wrappers.EnumWrappers;
 import com.comphenix.protocol.wrappers.EnumWrappers.ChatType;
 import com.comphenix.protocol.wrappers.EnumWrappers.ScoreboardAction;
+import com.comphenix.protocol.wrappers.MultiBlockChangeInfo;
 import com.comphenix.protocol.wrappers.PlayerInfoData;
+import com.comphenix.protocol.wrappers.WrappedBlockData;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
@@ -25,8 +28,11 @@ import net.minecraft.server.v1_8_R3.PacketPlayOutMapChunkBulk;
 import org.bukkit.Bukkit;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.craftbukkit.v1_8_R3.CraftChunk;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityTeleportEvent;
 import org.bukkit.event.player.PlayerAnimationType;
@@ -178,6 +184,12 @@ public class PacketBuilder {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.ANIMATION);
     packet.getIntegers().write(0, player.getEntityId());
     packet.getIntegers().write(1, anim.ordinal());
+    return packet;
+  }
+
+  public static PacketContainer createCollectPacket(Player player, Item item) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.COLLECT);
+    packet.getIntegers().write(0, player.getEntityId()).write(1, item.getEntityId());
     return packet;
   }
 
@@ -441,6 +453,110 @@ public class PacketBuilder {
       EnumWrappers.PlayerInfoAction action, Player player) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
     packet.getPlayerInfoAction().write(0, action);
+    return packet;
+  }
+
+  public static PacketContainer createAttachEntityPacket(Entity passenger, Entity mount) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.ATTACH_ENTITY);
+    packet.getIntegers().write(0, passenger.getEntityId()).write(1, mount.getEntityId());
+    return packet;
+  }
+
+  public static PacketContainer createAttachEntityPacket_Dismount(Entity passenger) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.ATTACH_ENTITY);
+    packet.getIntegers().write(0, passenger.getEntityId()).write(1, -1);
+    return packet;
+  }
+
+  public static PacketContainer createBlockChangePacket(Block block) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_CHANGE);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getBlockData().write(0, WrappedBlockData.createData(block.getType(), block.getData()));
+    return packet;
+  }
+
+  public static PacketContainer createBlockChangePacket_Destroy(Location location) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_CHANGE);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(location.toVector()));
+    packet.getBlockData().write(0, WrappedBlockData.createData(Material.AIR));
+    return packet;
+  }
+
+  public static PacketContainer createMultiBlockChangePacket(Chunk chunk, List<Block> blocks) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.MULTI_BLOCK_CHANGE);
+    packet.getChunkCoordIntPairs().write(0, new ChunkCoordIntPair(chunk.getX(), chunk.getZ()));
+    packet
+        .getMultiBlockChangeInfoArrays()
+        .write(
+            0,
+            (MultiBlockChangeInfo[])
+                blocks.stream()
+                    .map(
+                        block ->
+                            new MultiBlockChangeInfo(
+                                block.getLocation(),
+                                WrappedBlockData.createData(block.getType(), block.getData())))
+                    .collect(Collectors.toList())
+                    .toArray());
+    return packet;
+  }
+
+  public static PacketContainer createBlockActionPacket_Piston(Block block, boolean extend) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_ACTION);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getIntegers().write(0, extend ? 1 : 0).write(1, (int) block.getData());
+    packet.getBlocks().write(0, block.getType());
+    return packet;
+  }
+
+  public static PacketContainer createBlockActionPacket_NoteBlocks(
+      Block block, int instrument, int pitch) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_ACTION);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getIntegers().write(0, instrument).write(1, pitch);
+    packet.getBlocks().write(0, block.getType());
+    return packet;
+  }
+
+  public static PacketContainer createBlockActionPacket_Chest(Block block, boolean open) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_ACTION);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getIntegers().write(0, 1).write(1, open ? 1 : 0);
+    packet.getBlocks().write(0, block.getType());
+    return packet;
+  }
+
+  public static PacketContainer createBlockActionPacket_Beacon(Block block) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_ACTION);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getIntegers().write(0, 1).write(1, 0);
+    packet.getBlocks().write(0, block.getType());
+    return packet;
+  }
+
+  public static PacketContainer createBlockActionPacket_Spawner(Block block) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.BLOCK_ACTION);
+    packet.getBlockPositionModifier().write(0, new BlockPosition(block.getLocation().toVector()));
+    packet.getIntegers().write(0, 1).write(1, 0);
+    packet.getBlocks().write(0, block.getType());
+    return packet;
+  }
+
+  public static PacketContainer createExplosionPacket(Location location, List<Block> blocks) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.EXPLOSION);
+    packet
+        .getBlockPositionCollectionModifier()
+        .write(
+            0,
+            blocks.stream()
+                .map(block -> new BlockPosition(block.getLocation().toVector()))
+                .collect(Collectors.toList()));
+    packet
+        .getDoubles()
+        .write(0, location.getX())
+        .write(1, location.getY())
+        .write(2, location.getZ());
+    packet.getFloat().write(0, 0F).write(1, 0F).write(2, 0F).write(3, 0F);
     return packet;
   }
 
