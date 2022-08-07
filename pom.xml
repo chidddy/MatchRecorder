@@ -36,13 +36,6 @@
   </repositories>
 
   <dependencies>
-      <!-- SportBukkit 1.8 -->
-      <dependency>
-          <groupId>app.ashcon</groupId>
-          <artifactId>sportpaper</artifactId>
-          <version>1.8.8-R0.1-SNAPSHOT</version>
-          <scope>provided</scope>
-      </dependency>
 
        <!-- ProtocolLib -->
         <dependency>
@@ -58,15 +51,12 @@
           <groupId>tc.oc.pgm</groupId>
           <artifactId>core</artifactId>
           <version>0.14-SNAPSHOT</version>
-      </dependency>
-      <dependency>
-          <groupId>tc.oc.pgm</groupId>
-          <artifactId>util</artifactId>
-          <version>0.14-SNAPSHOT</version>
+          <scope>provided</scope>
       </dependency>
     </dependencies>
 
   <build>
+      <finalName>MatchRecorder-${project.version}-${git.commit.id.abbrev}</finalName>
       <resources>
           <!-- Include the required plugin.yml and config.yml for Bukkit -->
           <resource>
@@ -125,6 +115,66 @@
                   </execution>
               </executions>
           </plugin>
+
+            <!-- Exposes git information to the build environment -->
+            <plugin>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
+                </configuration>
+            </plugin>
+
+          <!-- Make sure people are compiling against the correct JDK -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.0.0-M3</version>
+                <executions>
+                    <execution>
+                        <id>enforce-versions</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireJavaVersion>
+                                    <!-- Fuzzy match -->
+                                    <version>[${maven.compiler.target},)</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <configuration>
+                            <target>
+                                <copy file="${basedir}/target/${project.build.finalName}.jar"
+                                      tofile="target/MatchRecorder.jar"/>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
       </plugins>
   </build>
 </project>
