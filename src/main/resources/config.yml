@@ -1,0 +1,9 @@
+# relative output directory
+output:
+  absolute: false
+  dir: 'replays'
+# whether or not to sign the replays
+signing:
+  sign: true
+  private-key: "recorder_rsa"
+  public-key: "recorder_rsa.pub"

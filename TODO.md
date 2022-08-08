@@ -5,7 +5,7 @@
 - [ ] countdown messages (time limit, flag respawns)
 - [ ] scorebox messages
 ## generic:
-- [ ] hash replays for validity
+- [x] hash replays for validity
 - [x] test with more than 2 players NOT on the same machine
 - [x] test particles with ping
 
@@ -18,7 +18,7 @@
 - [ ] FFA
 - [ ] RAGE
 - [ ] 8 TEAM WOOL MAPS
-- [ ] MAPS WITH LOTS OF ENTITIES
+- [x] MAPS WITH LOTS OF ENTITIES
 
 # down the line:
 

@@ -1,120 +1,139 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>tc.oc.occ</groupId>
-  <artifactId>matchrecorder</artifactId>
-  <version>1.0-SNAPSHOT</version>
+    <groupId>tc.oc.occ</groupId>
+    <artifactId>matchrecorder</artifactId>
+    <version>1.0-SNAPSHOT</version>
 
-  <name>MatchRecorder</name>
-  <description>A Minecraft plugin to record OCC matches in a ReplayMod format (.mcpr)</description>
-  <url>https://oc.tc</url>
+    <name>MatchRecorder</name>
+    <description>A Minecraft plugin to record OCC matches in a ReplayMod format (.mcpr)</description>
+    <url>https://oc.tc</url>
 
-  <properties>
-      <maven.compiler.source>1.8</maven.compiler.source>
-      <maven.compiler.target>1.8</maven.compiler.target>
-      <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-      <project.bukkit.main>tc.oc.occ.matchrecorder.MatchRecorder</project.bukkit.main>
-      <project.author>chiddy</project.author>
-  </properties>
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.bukkit.main>tc.oc.occ.matchrecorder.MatchRecorder</project.bukkit.main>
+        <project.author>chiddy</project.author>
+    </properties>
 
-  <repositories>
-      <repository>
-          <id>jitpack.io</id>
-          <url>https://jitpack.io</url>
-      </repository>
-      <repository>
-          <id>aikar</id>
-          <url>https://repo.aikar.co/content/groups/aikar/</url>
-      </repository>
-      <repository>
-          <id>dmulloy2-repo</id>
-          <url>https://repo.dmulloy2.net/repository/public/</url>
-      </repository>
-  </repositories>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+        <repository>
+            <id>aikar</id>
+            <url>https://repo.aikar.co/content/groups/aikar/</url>
+        </repository>
+        <repository>
+            <id>dmulloy2-repo</id>
+            <url>https://repo.dmulloy2.net/repository/public/</url>
+        </repository>
+    </repositories>
 
-  <dependencies>
+    <dependencies>
 
-       <!-- ProtocolLib -->
+        <!-- ProtocolLib -->
         <dependency>
-	      <groupId>com.comphenix.protocol</groupId>
-	      <artifactId>ProtocolLib</artifactId>
-	      <version>4.7.0</version>
-          <scope>provided</scope>
-    	</dependency>
+            <groupId>com.comphenix.protocol</groupId>
+            <artifactId>ProtocolLib</artifactId>
+            <version>4.7.0</version>
+            <scope>provided</scope>
+        </dependency>
 
 
-       <!-- PGM -->
-      <dependency>
-          <groupId>tc.oc.pgm</groupId>
-          <artifactId>core</artifactId>
-          <version>0.14-SNAPSHOT</version>
-          <scope>provided</scope>
-      </dependency>
+        <!-- PGM -->
+        <dependency>
+            <groupId>tc.oc.pgm</groupId>
+            <artifactId>core</artifactId>
+            <version>0.14-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- BouncyCastle -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcprov-jdk18on</artifactId>
+            <version>1.71</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <version>1.71</version>
+            <type>jar</type>
+        </dependency>
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcutil-jdk18on</artifactId>
+            <version>1.71</version>
+            <type>jar</type>
+        </dependency>
     </dependencies>
 
-  <build>
-      <finalName>MatchRecorder-${project.version}-${git.commit.id.abbrev}</finalName>
-      <resources>
-          <!-- Include the required plugin.yml and config.yml for Bukkit -->
-          <resource>
-              <directory>${basedir}/src/main/resources</directory>
-              <filtering>true</filtering>
-          </resource>
-      </resources>
+    <build>
+        <finalName>MatchRecorder-${project.version}-${git.commit.id.abbrev}</finalName>
+        <resources>
+            <!-- Include the required plugin.yml and config.yml for Bukkit -->
+            <resource>
+                <directory>${basedir}/src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
 
-      <plugins>
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-compiler-plugin</artifactId>
-              <version>3.8.1</version>
-          </plugin>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+            </plugin>
 
 
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <version>3.2.3</version>
-              <configuration>
-                  <createDependencyReducedPom>false</createDependencyReducedPom>
-                  <minimizeJar>true</minimizeJar>
-                  <filters>
-                      <filter>
-                          <artifact>*:*</artifact>
-                          <excludes>
-                              <exclude>META-INF/**</exclude>
-                          </excludes>
-                      </filter>
-                  </filters>
-              </configuration>
-              <executions>
-                  <execution>
-                      <phase>package</phase>
-                      <goals>
-                          <goal>shade</goal>
-                      </goals>
-                 </execution>
-              </executions>
-          </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.2.3</version>
+                <configuration>
+                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                    <minimizeJar>true</minimizeJar>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/**</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
-           <!-- Validates that code is properly formatted with Google's code style -->
-          <plugin>
-              <groupId>com.coveo</groupId>
-              <artifactId>fmt-maven-plugin</artifactId>
-              <version>2.9</version>
-              <configuration>
-                  <style>google</style>
-              </configuration>
-              <executions>
-                  <execution>
-                      <goals>
-                          <goal>check</goal>
-                      </goals>
-                  </execution>
-              </executions>
-          </plugin>
+            <!-- Validates that code is properly formatted with Google's code style -->
+            <plugin>
+                <groupId>com.coveo</groupId>
+                <artifactId>fmt-maven-plugin</artifactId>
+                <version>2.9</version>
+                <configuration>
+                    <style>google</style>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
             <!-- Exposes git information to the build environment -->
             <plugin>
@@ -134,7 +153,7 @@
                 </configuration>
             </plugin>
 
-          <!-- Make sure people are compiling against the correct JDK -->
+            <!-- Make sure people are compiling against the correct JDK -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-enforcer-plugin</artifactId>
@@ -165,8 +184,7 @@
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <copy file="${basedir}/target/${project.build.finalName}.jar"
-                                      tofile="target/MatchRecorder.jar"/>
+                                <copy file="${basedir}/target/${project.build.finalName}.jar" tofile="target/MatchRecorder.jar" />
                             </target>
                         </configuration>
                         <goals>
@@ -175,6 +193,6 @@
                     </execution>
                 </executions>
             </plugin>
-      </plugins>
-  </build>
+        </plugins>
+    </build>
 </project>

@@ -2,7 +2,6 @@ package tc.oc.occ.matchrecorder;
 
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.EnumWrappers;
-import java.io.IOException;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -64,7 +63,7 @@ public class Replay {
     try {
       new ReplayWriter(meta.getFile(), meta, (LinkedHashSet<ReplayPacket>) packets.clone())
           .runTask(MatchRecorder.get());
-    } catch (IOException e) {
+    } catch (Exception e) {
       MatchRecorder.get().getLogger().log(Level.SEVERE, "Failed to write", e);
     }
     this.packets.clear();
