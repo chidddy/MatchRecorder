@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.bukkit.Sound;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.Listener;
@@ -46,6 +47,13 @@ public class PacketListener extends PacketAdapter implements Listener {
         || packet.getType() == PacketType.Play.Server.SCOREBOARD_SCORE
         || packet.getType() == PacketType.Play.Server.SCOREBOARD_OBJECTIVE) {
       return;
+    }
+
+    // TODO:
+    // ! [ ] filter sound effects
+    if (packet.getType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
+      String sound = packet.getStrings().read(0);
+      if (sound == Sound.CLICK.name() || sound == Sound.PORTAL_TRIGGER.name()) return;
     }
 
     if (packet.getType() == PacketType.Play.Server.REL_ENTITY_MOVE

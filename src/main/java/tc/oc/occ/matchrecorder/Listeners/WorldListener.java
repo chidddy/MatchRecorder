@@ -11,7 +11,7 @@ import tc.oc.occ.matchrecorder.Recorder;
 import tc.oc.pgm.api.match.event.MatchLoadEvent;
 
 public class WorldListener implements Listener {
-  private Recorder recorder;
+  private final Recorder recorder;
 
   public WorldListener(Recorder recorder) {
     this.recorder = recorder;

@@ -1,9 +1,11 @@
 # TODOS:
 
 ## features:
-- [ ] scoreboard
-- [ ] countdown messages (time limit, flag respawns)
-- [ ] scorebox messages
+- [x] scoreboard
+- [x] countdown messages (time limit)
+- [x] flag countdowns
+- [x] filter sounds
+- [x] scorebox messages
 ## generic:
 - [x] hash replays for validity
 - [x] test with more than 2 players NOT on the same machine
@@ -19,6 +21,7 @@
 - [ ] RAGE
 - [ ] 8 TEAM WOOL MAPS
 - [x] MAPS WITH LOTS OF ENTITIES
+- [ ] launchpads (for some reason not all movement packets get stored and ends up innacurate)
 
 # down the line:
 

@@ -189,7 +189,7 @@ public class PacketBuilder {
 
   public static PacketContainer createCollectPacket(Player player, Item item) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.COLLECT);
-    packet.getIntegers().write(0, player.getEntityId()).write(1, item.getEntityId());
+    packet.getIntegers().write(0, item.getEntityId()).write(1, player.getEntityId());
     return packet;
   }
 
@@ -564,7 +564,7 @@ public class PacketBuilder {
       String name, String display) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_OBJECTIVE);
     packet.getStrings().write(0, name);
-    packet.getChatComponents().write(0, WrappedChatComponent.fromLegacyText(display));
+    packet.getStrings().write(1, display);
     packet.getIntegers().write(0, 0);
     packet.getEnumModifier(HealthDisplay.class, 2).write(0, HealthDisplay.INTEGER);
     return packet;
@@ -574,7 +574,7 @@ public class PacketBuilder {
       String name, String display) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_OBJECTIVE);
     packet.getStrings().write(0, name);
-    packet.getChatComponents().write(0, WrappedChatComponent.fromLegacyText(display));
+    packet.getStrings().write(1, display);
     packet.getIntegers().write(0, 2);
     packet.getEnumModifier(HealthDisplay.class, 2).write(0, HealthDisplay.INTEGER);
     return packet;
@@ -589,11 +589,55 @@ public class PacketBuilder {
     return packet;
   }
 
+  public static PacketContainer createScoreboardScorePacket_Remove(String name, int order) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_SCORE);
+    packet.getStrings().write(0, "§" + order);
+    packet.getScoreboardActions().write(0, ScoreboardAction.REMOVE);
+    packet.getStrings().write(1, name);
+    return packet;
+  }
+
   public static PacketContainer createScoreboardDisplayObjectivePacket(String name) {
     PacketContainer packet =
         new PacketContainer(PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE);
     packet.getStrings().write(0, name);
     packet.getIntegers().write(0, 1);
+    return packet;
+  }
+
+  public static PacketContainer createScoreboardTeamPacket_Create(
+      String name, String prefix, String suffix) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_TEAM);
+    packet.getStrings().write(0, name);
+    packet.getIntegers().write(1, 0);
+    packet.getStrings().write(1, "");
+    packet.getStrings().write(2, prefix);
+    packet.getStrings().write(3, suffix);
+    packet.getIntegers().write(2, 2);
+    packet.getStrings().write(4, "always");
+    Collection<String> playerNames =
+        Stream.of("§" + name.substring(name.length() - 1)).collect(Collectors.toList());
+    packet.getSpecificModifier(Collection.class).write(0, playerNames);
+    return packet;
+  }
+
+  public static PacketContainer createScoreboardTeamPacket_Modify(
+      String name, String prefix, String suffix) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_TEAM);
+    packet.getStrings().write(0, name);
+    packet.getIntegers().write(1, 2);
+    packet.getStrings().write(1, "");
+    packet.getStrings().write(2, prefix);
+    packet.getStrings().write(3, suffix);
+    packet.getIntegers().write(2, 2);
+    packet.getStrings().write(4, "always");
+    return packet;
+  }
+
+  public static PacketContainer createScoreboardTeamPacket_Remove(String name) {
+    PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_TEAM);
+    packet.getStrings().write(0, name);
+    packet.getIntegers().write(1, 1);
     return packet;
   }
 
@@ -619,7 +663,7 @@ public class PacketBuilder {
   public static PacketContainer createScoreboardTeamPacket_Modify(Party party) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_TEAM);
     packet.getStrings().write(0, toShortName(party.getNameLegacy()));
-    packet.getIntegers().write(1, 0);
+    packet.getIntegers().write(1, 2);
     packet.getStrings().write(1, party.getColor().toString() + toShortName(party.getNameLegacy()));
     packet.getStrings().write(2, party.getColor().toString());
     packet.getStrings().write(3, "§f");

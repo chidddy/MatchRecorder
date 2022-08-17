@@ -2,15 +2,18 @@ package tc.oc.occ.matchrecorder;
 
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.EnumWrappers;
+import java.time.Duration;
 import java.util.LinkedHashSet;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
+import javax.annotation.Nullable;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.goals.Goal;
 
 @SuppressWarnings({"unchecked"})
 public class Replay {
@@ -21,6 +24,7 @@ public class Replay {
   private UUID recorderUUID;
   private final LinkedHashSet<PacketContainer> chunkPackets = new LinkedHashSet<>();
   private static final AtomicInteger ENTITY_IDS = new AtomicInteger(Integer.MAX_VALUE);
+  private SideBarGenerator sidebar = null;
 
   public Replay() {
     this.startTime = 0;
@@ -40,7 +44,7 @@ public class Replay {
   public void startRecording(Match match) {
     this.startTime = System.currentTimeMillis();
     int entityId = ENTITY_IDS.decrementAndGet();
-
+    this.sidebar = new SideBarGenerator(this, match);
     addPacket(PacketBuilder.createLoginSuccessPacket(this.recorderUUID));
     addPacket(PacketBuilder.createLoginPacket(match, entityId));
     addPacket(PacketBuilder.createPositionPacket(match.getWorld().getSpawnLocation()));
@@ -55,6 +59,9 @@ public class Replay {
     match
         .getParties()
         .forEach(party -> addPacket(PacketBuilder.createScoreboardTeamPacket_Create(party)));
+
+    this.sidebar.createSidebar();
+    this.sidebar.displayUpdatedSidebar(this.sidebar.constructSidebar());
   }
 
   public void stopRecording(Match match) {
@@ -152,5 +159,17 @@ public class Replay {
               removePlayer(player, false);
             },
             15);
+  }
+
+  public void updateSidebar() {
+    this.sidebar.displayUpdatedSidebar(this.sidebar.constructSidebar());
+  }
+
+  public void blinkGoal(Goal goal, float rateHz, @Nullable Duration duration) {
+    this.sidebar.blinkGoal(goal, rateHz, duration);
+  }
+
+  public void stopBlinkingGoal(Goal goal) {
+    this.sidebar.stopBlinkingGoal(goal);
   }
 }

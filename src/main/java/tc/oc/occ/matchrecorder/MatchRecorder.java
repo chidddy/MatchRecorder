@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import tc.oc.occ.matchrecorder.Listeners.MatchListener;
 import tc.oc.occ.matchrecorder.Listeners.PacketListener;
 import tc.oc.occ.matchrecorder.Listeners.PlayerListener;
+import tc.oc.occ.matchrecorder.Listeners.SidebarListener;
 import tc.oc.occ.matchrecorder.Listeners.WorldListener;
 
 public class MatchRecorder extends JavaPlugin implements Listener {
@@ -75,5 +76,6 @@ public class MatchRecorder extends JavaPlugin implements Listener {
     Bukkit.getPluginManager().registerEvents(new WorldListener(this.recorder), this);
     Bukkit.getPluginManager().registerEvents(new PlayerListener(this.recorder), this);
     Bukkit.getPluginManager().registerEvents(new PacketListener(this), this);
+    Bukkit.getPluginManager().registerEvents(new SidebarListener(this.recorder), this);
   }
 }

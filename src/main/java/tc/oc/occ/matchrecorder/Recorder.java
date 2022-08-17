@@ -1,10 +1,13 @@
 package tc.oc.occ.matchrecorder;
 
 import com.comphenix.protocol.events.PacketContainer;
+import java.time.Duration;
+import javax.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import tc.oc.pgm.api.match.Match;
 import tc.oc.pgm.api.player.MatchPlayer;
+import tc.oc.pgm.goals.Goal;
 
 public class Recorder {
   private final Replay replay = new Replay();
@@ -51,5 +54,17 @@ public class Recorder {
 
   public void killPlayer(MatchPlayer player) {
     replay.killPlayer(player);
+  }
+
+  public void updateSidebar() {
+    replay.updateSidebar();
+  }
+
+  public void blinkGoal(Goal goal, float rateHz, @Nullable Duration duration) {
+    replay.blinkGoal(goal, rateHz, duration);
+  }
+
+  public void stopBlinkingGoal(Goal goal) {
+    replay.stopBlinkingGoal(goal);
   }
 }
