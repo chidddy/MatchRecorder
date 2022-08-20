@@ -42,14 +42,6 @@ public class PacketListener extends PacketAdapter implements Listener {
     if (player.isObserving()) return;
 
     // TODO:
-    if (packet.getType() == PacketType.Play.Server.SCOREBOARD_TEAM
-        || packet.getType() == PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE
-        || packet.getType() == PacketType.Play.Server.SCOREBOARD_SCORE
-        || packet.getType() == PacketType.Play.Server.SCOREBOARD_OBJECTIVE) {
-      return;
-    }
-
-    // TODO:
     // ! [ ] filter sound effects
     if (packet.getType() == PacketType.Play.Server.NAMED_SOUND_EFFECT) {
       String sound = packet.getStrings().read(0);
@@ -62,13 +54,15 @@ public class PacketListener extends PacketAdapter implements Listener {
         || packet.getType() == PacketType.Play.Server.ENTITY_HEAD_ROTATION
         || packet.getType() == PacketType.Play.Server.ENTITY_VELOCITY
         || packet.getType() == PacketType.Play.Server.ENTITY_TELEPORT
-        || packet.getType() == PacketType.Play.Server.ANIMATION
-        || packet.getType() == PacketType.Play.Server.ATTACH_ENTITY) {
+        || packet.getType() == PacketType.Play.Server.ANIMATION) {
       Entity ent = packet.getEntityModifier(player.getWorld()).read(0);
       if (ent != null) {
-        if (ent.getType() == EntityType.PLAYER) {
+        if (ent.getType() == EntityType.PLAYER
+            && packet.getType() != PacketType.Play.Server.ENTITY_VELOCITY) {
           return;
         }
+      } else {
+        return;
       }
     } else if (packet.getType() == PacketType.Play.Server.ENTITY_DESTROY) {
       Entity ent =
@@ -125,11 +119,6 @@ public class PacketListener extends PacketAdapter implements Listener {
                 PacketType.Play.Server.BLOCK_ACTION,
                 PacketType.Play.Server.UPDATE_SIGN,
                 PacketType.Play.Server.BLOCK_BREAK_ANIMATION,
-                // ! FINISH MANUALLY ADDING THESE
-                PacketType.Play.Server.SCOREBOARD_DISPLAY_OBJECTIVE,
-                PacketType.Play.Server.SCOREBOARD_OBJECTIVE,
-                PacketType.Play.Server.SCOREBOARD_SCORE,
-                PacketType.Play.Server.SCOREBOARD_TEAM,
                 PacketType.Play.Server.GAME_STATE_CHANGE));
     return types.stream().collect(Collectors.toSet());
   }

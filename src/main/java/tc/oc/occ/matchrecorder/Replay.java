@@ -162,7 +162,7 @@ public class Replay {
   }
 
   public void updateSidebar() {
-    this.sidebar.displayUpdatedSidebar(this.sidebar.constructSidebar());
+    this.sidebar.renderSidebarDebounce();
   }
 
   public void blinkGoal(Goal goal, float rateHz, @Nullable Duration duration) {

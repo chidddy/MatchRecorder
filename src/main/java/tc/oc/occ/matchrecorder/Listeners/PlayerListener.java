@@ -14,7 +14,6 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerPickupItemEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerTeleportEvent.TeleportCause;
-import org.bukkit.event.player.PlayerVelocityEvent;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import org.spigotmc.event.entity.EntityMountEvent;
 import tc.oc.occ.matchrecorder.MatchRecorder;
@@ -45,7 +44,7 @@ public class PlayerListener implements Listener {
   @EventHandler(priority = EventPriority.MONITOR)
   public void onPlayerLeave(ParticipantDespawnEvent event) {
     if (!event.getMatch().isRunning() || !recorder.isRecording()) return;
-    if (event.getPlayer().isDead()) {
+    if (event.getPlayer() != null && event.getPlayer().isDead()) {
       recorder.killPlayer(event.getPlayer());
     } else {
       recorder.removePlayer(event.getPlayer(), true);
@@ -94,16 +93,6 @@ public class PlayerListener implements Listener {
           PacketBuilder.createRelativeEntityMovePacket(
               event.getPlayer(), event.getFrom(), event.getTo()));
     }
-  }
-
-  @EventHandler(priority = EventPriority.MONITOR)
-  public void onPlayerVelocity(PlayerVelocityEvent event) {
-    if (!recorder.isRecording()) return;
-    MatchPlayer player = PGM.get().getMatchManager().getPlayer(event.getPlayer());
-    if (player == null) return;
-    if (player.isObserving() || player.isDead()) return;
-    recorder.addPacket(
-        PacketBuilder.createEntityVelocityPacket(event.getPlayer(), event.getVelocity()));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)

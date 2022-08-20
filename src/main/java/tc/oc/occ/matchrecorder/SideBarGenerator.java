@@ -46,28 +46,17 @@ import tc.oc.pgm.util.text.TextTranslations;
 import tc.oc.pgm.wool.MonumentWool;
 import tc.oc.pgm.wool.WoolMatchModule;
 
-/*
- * contrust all the necesarry rows (16)
- * from fb-hash:0-15
- * just update the display name of fb-hash:0-15
- *
- *
- *
- */
 @SuppressWarnings("unused")
 public class SideBarGenerator {
   private final Replay recorder;
   private Match match = null;
   private String baseString = null;
+  private @Nullable Future<?> renderTask;
 
   private static final int MAX_ROWS = 16; // Max rows on the scoreboard
   private static final int MAX_LENGTH = 30; // Max characters per line allowed
   private static final int MAX_TEAM = 16; // Max characters per team name
   private static final int MAX_TITLE = 32; // Max characters allowed in title
-
-  // use this as a cache so that:
-  // for any generated string that != the string in here
-  // update it
   private final List<String> rows = new ArrayList<String>(MAX_ROWS);
   private final Map<Goal, BlinkTask> blinkingGoals = new HashMap<>();
 
@@ -78,7 +67,6 @@ public class SideBarGenerator {
   }
 
   public void createSidebar() {
-    // header
     recorder.addPacket(
         PacketBuilder.createScoreboardObjectivePacket_Create(
             this.baseString,
@@ -95,16 +83,29 @@ public class SideBarGenerator {
             });
   }
 
+  public void renderSidebarDebounce() {
+    if (this.renderTask == null || renderTask.isDone()) {
+      this.renderTask =
+          match
+              .getExecutor(MatchScope.LOADED)
+              .submit(
+                  () -> {
+                    this.renderTask = null;
+                    this.displayUpdatedSidebar(this.constructSidebar());
+                  });
+    }
+  }
+
   public void displayUpdatedSidebar(List<String> new_rows) {
     for (int i = 0; i < MAX_ROWS; i++) {
       String cached_row = this.rows.get(i);
       String row = new_rows.get(i);
-      if (cached_row.equals(row)) continue;
+      if (cached_row.equalsIgnoreCase(row)) continue;
       this.rows.set(i, row);
-      if (row == this.baseString + ":" + i) {
+      if (row.equalsIgnoreCase(this.baseString + ":" + i)) {
         removeTeamPacket(i);
       } else {
-        createTeamPacket(row, i, cached_row.equals(this.baseString + ":" + i));
+        createTeamPacket(row, i, cached_row.equalsIgnoreCase(this.baseString + ":" + i));
       }
     }
   }
@@ -119,7 +120,7 @@ public class SideBarGenerator {
     String prefix = "";
     String suffix = "";
     if (text == "") {
-      prefix = "§" + idx + "§r";
+      prefix = PacketBuilder.COLOR_CODES[idx] + "§r";
     } else if (text.length() <= MAX_TEAM) {
       prefix = text;
     } else {
@@ -139,7 +140,6 @@ public class SideBarGenerator {
     }
 
     if (prefix.length() > MAX_TEAM || (suffix != null && suffix.length() > MAX_TEAM)) {
-      // Something went wrong, just cut to prevent client crash/kick
       prefix = prefix.substring(0, MAX_TEAM);
       suffix = (suffix != null) ? suffix.substring(0, MAX_TEAM) : "";
     }
@@ -163,16 +163,12 @@ public class SideBarGenerator {
     return match.getModule(BlitzMatchModule.class) != null;
   }
 
-  // Determines if wool objectives should be given their own rows, or all shown on
-  // 1 row.
   private boolean isCompactWool() {
     WoolMatchModule wmm = match.getModule(WoolMatchModule.class);
     return wmm != null
         && !(wmm.getWools().keySet().size() * 2 - 1 + wmm.getWools().values().size() < MAX_ROWS);
   }
 
-  // Determines if all the map objectives can fit onto the scoreboard with empty
-  // rows in between.
   private boolean isSuperCompact(Set<Competitor> competitorsWithGoals) {
     int rowsUsed = competitorsWithGoals.size() * 2 - 1;
 
@@ -210,7 +206,6 @@ public class SideBarGenerator {
 
     final List<Component> games = new LinkedList<>();
 
-    // First, find a primary game mode
     for (final MapTag tag : map.getTags()) {
       if (!tag.isGamemode() || tag.isAuxiliary()) continue;
 
@@ -219,16 +214,13 @@ public class SideBarGenerator {
         continue;
       }
 
-      // When there are multiple, primary game modes
       games.set(0, translatable("gamemode.generic.name", NamedTextColor.AQUA));
       break;
     }
 
-    // Second, append auxiliary game modes
     for (final MapTag tag : map.getTags()) {
       if (!tag.isGamemode() || !tag.isAuxiliary()) continue;
 
-      // There can only be 2 game modes
       if (games.size() < 2) {
         games.add(tag.getName().color(NamedTextColor.AQUA));
       } else {
@@ -277,7 +269,6 @@ public class SideBarGenerator {
     sb.append(goal.renderSidebarStatusText(competitor, this.match.getDefaultParty()));
 
     if (goal instanceof ProximityGoal) {
-      // Show teams their own proximity on shared goals
       String proximity =
           ((ProximityGoal) goal).renderProximity(competitor, this.match.getDefaultParty());
 
@@ -307,7 +298,6 @@ public class SideBarGenerator {
     Set<Competitor> competitorsWithGoals = new HashSet<>();
     List<Goal<?>> sharedGoals = new ArrayList<>();
 
-    // Count the rows used for goals
     for (Goal<?> goal : gmm.getGoals()) {
       if (goal.hasShowOption(ShowOption.SHOW_SIDEBAR)) {
         if (goal.isShared()) {
@@ -320,7 +310,6 @@ public class SideBarGenerator {
     final boolean isSuperCompact = isSuperCompact(competitorsWithGoals);
 
     final List<String> rows = new ArrayList<>(MAX_ROWS);
-    // Scores/Blitz
     if (hasScores || isBlitz) {
       for (Competitor competitor : match.getSortedCompetitors()) {
         String text;
@@ -335,39 +324,31 @@ public class SideBarGenerator {
                 + LegacyComponentSerializer.legacySection()
                     .serialize(TextTranslations.translate(competitor.getName(), Locale.ENGLISH)));
 
-        // No point rendering more scores, usually seen in FFA
         if (rows.size() >= MAX_ROWS) break;
       }
 
       if (!competitorsWithGoals.isEmpty() || !sharedGoals.isEmpty()) {
-        // Blank row between scores and goals
         rows.add("");
       }
     }
 
     boolean firstTeam = true;
 
-    // Shared goals i.e. not grouped under a specific team
     for (Goal goal : sharedGoals) {
       firstTeam = false;
       rows.add(this.renderGoal(goal, null));
     }
 
-    // Team-specific goals
     List<Competitor> sortedCompetitors = new ArrayList<>(match.getSortedCompetitors());
     sortedCompetitors.retainAll(competitorsWithGoals);
     for (Competitor competitor : sortedCompetitors) {
-      // Prevent team name from showing if there isn't space for at least 1 row of its
-      // objectives
       if (!(rows.size() + 2 < MAX_ROWS)) break;
 
       if (!(firstTeam || isSuperCompact)) {
-        // Add a blank row between teams
         rows.add("");
       }
       firstTeam = false;
 
-      // Add a row for the team name
       rows.add(this.renderTeam(competitor));
 
       if (isCompactWool) {
@@ -376,15 +357,10 @@ public class SideBarGenerator {
         List<Goal> sortedWools = new ArrayList<>(gmm.getGoals(competitor));
         Collections.sort(sortedWools, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
 
-        // Calculate whether having three spaces between each wool would fit on the
-        // scoreboard.
         boolean horizontalCompact =
             MAX_LENGTH < (3 * sortedWools.size()) + (3 * (sortedWools.size() - 1)) + 1;
         String woolText = "";
         if (!horizontalCompact) {
-          // If there is extra room, add another space to the left of the wools to make
-          // them
-          // appear more centered.
           woolText += " ";
         }
 
@@ -398,11 +374,9 @@ public class SideBarGenerator {
             woolText += wool.renderSidebarStatusText(competitor, this.match.getDefaultParty());
           }
         }
-        // Add a row for the compact wools
         rows.add(woolText);
 
       } else {
-        // Not compact; add a row for each of this team's goals
         for (Goal goal : gmm.getGoals()) {
           if (!goal.isShared()
               && goal.canComplete(competitor)
@@ -414,7 +388,6 @@ public class SideBarGenerator {
     }
     final Component footer = PGM.get().getConfiguration().getMatchFooter();
     if (footer != null) {
-      // Only shows footer if there are one or two rows available
       if (rows.size() < MAX_ROWS - 2) {
         rows.add("");
       }
@@ -472,8 +445,7 @@ public class SideBarGenerator {
     public void stop() {
       this.task.cancel(true);
       SideBarGenerator.this.blinkingGoals.remove(this.goal);
-      // renderSidebarDebounce();
-      displayUpdatedSidebar(constructSidebar());
+      renderSidebarDebounce();
     }
 
     public boolean isDark() {
@@ -491,8 +463,7 @@ public class SideBarGenerator {
       }
 
       this.dark = !this.dark;
-      // renderSidebarDebounce();
-      displayUpdatedSidebar(constructSidebar());
+      renderSidebarDebounce();
     }
   }
 }

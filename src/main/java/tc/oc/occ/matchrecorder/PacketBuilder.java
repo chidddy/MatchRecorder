@@ -14,6 +14,7 @@ import com.comphenix.protocol.wrappers.WrappedBlockData;
 import com.comphenix.protocol.wrappers.WrappedChatComponent;
 import com.comphenix.protocol.wrappers.WrappedDataWatcher;
 import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import net.minecraft.server.v1_8_R3.MathHelper;
 import net.minecraft.server.v1_8_R3.PacketPlayOutMapChunk;
 import net.minecraft.server.v1_8_R3.PacketPlayOutMapChunkBulk;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Chunk;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -47,6 +49,8 @@ import tc.oc.pgm.api.player.MatchPlayer;
 public class PacketBuilder {
 
   public static final HashMap<PacketType, Integer> packetTypes = new HashMap<PacketType, Integer>();
+  public static final String[] COLOR_CODES =
+      Arrays.stream(ChatColor.values()).map(Object::toString).toArray(String[]::new);
 
   static {
     packetTypes.put(PacketType.Play.Server.LOGIN, 0x01);
@@ -582,7 +586,7 @@ public class PacketBuilder {
 
   public static PacketContainer createScoreboardScorePacket_Order(String name, int order) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_SCORE);
-    packet.getStrings().write(0, "§" + order);
+    packet.getStrings().write(0, COLOR_CODES[order]);
     packet.getScoreboardActions().write(0, ScoreboardAction.CHANGE);
     packet.getStrings().write(1, name);
     packet.getIntegers().write(0, order);
@@ -591,7 +595,7 @@ public class PacketBuilder {
 
   public static PacketContainer createScoreboardScorePacket_Remove(String name, int order) {
     PacketContainer packet = new PacketContainer(PacketType.Play.Server.SCOREBOARD_SCORE);
-    packet.getStrings().write(0, "§" + order);
+    packet.getStrings().write(0, COLOR_CODES[order]);
     packet.getScoreboardActions().write(0, ScoreboardAction.REMOVE);
     packet.getStrings().write(1, name);
     return packet;
@@ -616,7 +620,8 @@ public class PacketBuilder {
     packet.getIntegers().write(2, 2);
     packet.getStrings().write(4, "always");
     Collection<String> playerNames =
-        Stream.of("§" + name.substring(name.length() - 1)).collect(Collectors.toList());
+        Stream.of(COLOR_CODES[Integer.parseInt(name.substring(name.lastIndexOf(":") + 1))])
+            .collect(Collectors.toList());
     packet.getSpecificModifier(Collection.class).write(0, playerNames);
     return packet;
   }

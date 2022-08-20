@@ -224,8 +224,8 @@ public class MatchListener implements Listener {
       message =
           TextTranslations.translate(
               translatable("flag.drop", event.getFlag().getComponentName()), Locale.ENGLISH);
-      if(TimeUtils.isInfinite(state.getDuration())){
-      this.recorder.blinkGoal(event.getFlag(), 2, null);
+      if (TimeUtils.isInfinite(state.getDuration())) {
+        this.recorder.blinkGoal(event.getFlag(), 2, null);
       }
     } else if (state instanceof Returned) {
       message =
@@ -248,7 +248,7 @@ public class MatchListener implements Listener {
                       time)
                   : translatable("flag.willRespawn", event.getFlag().getComponentName(), time),
               Locale.ENGLISH);
-    } else if(state instanceof Carried) {
+    } else if (state instanceof Carried) {
       recorder.blinkGoal(event.getGoal(), 2, null);
     } else {
       return;

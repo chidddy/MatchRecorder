@@ -61,25 +61,25 @@ public class SidebarListener implements Listener {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void onPartyRename(final PartyRenameEvent event) {
+  public void onPartyRename(PartyRenameEvent event) {
     if (!this.recorder.isRecording()) return;
     this.recorder.updateSidebar();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void scoreChange(final CompetitorScoreChangeEvent event) {
+  public void scoreChange(CompetitorScoreChangeEvent event) {
     if (!this.recorder.isRecording()) return;
     this.recorder.updateSidebar();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void goalTouch(final GoalTouchEvent event) {
+  public void goalTouch(GoalTouchEvent event) {
     if (!this.recorder.isRecording()) return;
     this.recorder.updateSidebar();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void goalStatusChange(final GoalStatusChangeEvent event) {
+  public void goalStatusChange(GoalStatusChangeEvent event) {
     if (!this.recorder.isRecording()) return;
     if (event.getGoal() instanceof Destroyable
         && ((Destroyable) event.getGoal()).getShowProgress()) {
@@ -90,7 +90,7 @@ public class SidebarListener implements Listener {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void goalProximityChange(final GoalProximityChangeEvent event) {
+  public void goalProximityChange(GoalProximityChangeEvent event) {
     if (!this.recorder.isRecording()) return;
     if (PGM.get().getConfiguration().showProximity()) {
       this.recorder.updateSidebar();
@@ -98,13 +98,13 @@ public class SidebarListener implements Listener {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void goalComplete(final GoalCompleteEvent event) {
+  public void goalComplete(GoalCompleteEvent event) {
     if (!this.recorder.isRecording()) return;
     this.recorder.updateSidebar();
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void goalChange(final FeatureChangeEvent event) {
+  public void goalChange(FeatureChangeEvent event) {
     if (!this.recorder.isRecording()) return;
     if (event.getFeature() instanceof Goal) {
       this.recorder.updateSidebar();
@@ -112,7 +112,7 @@ public class SidebarListener implements Listener {
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
-  public void updateRespawnLimit(final TeamRespawnsChangeEvent event) {
+  public void updateRespawnLimit(TeamRespawnsChangeEvent event) {
     if (!this.recorder.isRecording()) return;
     this.recorder.updateSidebar();
   }
