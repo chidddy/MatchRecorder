@@ -28,11 +28,9 @@ public class WorldListener implements Listener {
     }
   }
 
-  // *NOTES:
-  // * EACH CHUNK BULK HAS 10 CHUNKS
   @EventHandler(priority = EventPriority.MONITOR)
   public void onMatchLoad(MatchLoadEvent event) {
-    recorder.chearChunks();
+    recorder.clearChunks();
     Lists.partition(Arrays.asList(event.getWorld().getLoadedChunks()), 10)
         .forEach(
             chunkList -> {

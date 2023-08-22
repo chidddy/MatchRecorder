@@ -48,7 +48,7 @@ public class Recorder {
     replay.addChunkPacket(packet);
   }
 
-  public void chearChunks() {
+  public void clearChunks() {
     replay.clearChunks();
   }
 
