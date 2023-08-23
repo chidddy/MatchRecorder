@@ -1,6 +1,5 @@
 package tc.oc.occ.matchrecorder.Listeners;
 
-import java.util.Locale;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -157,8 +156,7 @@ public class PlayerListener implements Listener {
   public void onPlayerDeath(MatchPlayerDeathEvent event) {
     if (!recorder.isRecording()) return;
     DeathMessageBuilder builder = new DeathMessageBuilder(event, MatchRecorder.get().getLogger());
-    Component message =
-        TextTranslations.translate(builder.getMessage().color(NamedTextColor.GRAY), Locale.ENGLISH);
+    Component message = TextTranslations.translate(builder.getMessage().color(NamedTextColor.GRAY));
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 

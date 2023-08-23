@@ -1,0 +1,263 @@
+diff --git i/core/src/main/java/tc/oc/pgm/broadcast/BroadcastCountdown.java w/core/src/main/java/tc/oc/pgm/broadcast/BroadcastCountdown.java
+index a48a73508..a7d734e4b 100644
+--- i/core/src/main/java/tc/oc/pgm/broadcast/BroadcastCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/broadcast/BroadcastCountdown.java
+@@ -22,12 +22,12 @@ public class BroadcastCountdown extends MatchCountdown {
+   }
+ 
+   @Override
+-  protected boolean showChat() {
++  public boolean showChat() {
+     return false;
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return empty();
+   }
+ 
+diff --git i/core/src/main/java/tc/oc/pgm/countdowns/MatchCountdown.java w/core/src/main/java/tc/oc/pgm/countdowns/MatchCountdown.java
+index 15fec66a7..023399df4 100644
+--- i/core/src/main/java/tc/oc/pgm/countdowns/MatchCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/countdowns/MatchCountdown.java
+@@ -48,9 +48,9 @@ public abstract class MatchCountdown extends Countdown {
+     return this.bossBar;
+   }
+ 
+-  protected abstract Component formatText();
++  public abstract Component formatText();
+ 
+-  protected boolean showChat() {
++  public boolean showChat() {
+     long secondsLeft = remaining.getSeconds();
+     return secondsLeft > 0
+         && (secondsLeft % 300 == 0
+diff --git i/core/src/main/java/tc/oc/pgm/cycle/CycleCountdown.java w/core/src/main/java/tc/oc/pgm/cycle/CycleCountdown.java
+index 5548849bd..e4d82f7ce 100644
+--- i/core/src/main/java/tc/oc/pgm/cycle/CycleCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/cycle/CycleCountdown.java
+@@ -45,7 +45,7 @@ public class CycleCountdown extends MatchCountdown {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     Component mapName = nextMap == null ? null : text(nextMap.getName(), NamedTextColor.AQUA);
+ 
+     TranslatableComponent cycleComponent;
+diff --git i/core/src/main/java/tc/oc/pgm/flag/state/BaseState.java w/core/src/main/java/tc/oc/pgm/flag/state/BaseState.java
+index e9ce5b430..c0bc8e09b 100644
+--- i/core/src/main/java/tc/oc/pgm/flag/state/BaseState.java
++++ w/core/src/main/java/tc/oc/pgm/flag/state/BaseState.java
+@@ -86,7 +86,7 @@ public abstract class BaseState implements Runnable, State {
+     return this.flag.isCurrent(this);
+   }
+ 
+-  protected @Nullable Duration getDuration() {
++  public @Nullable Duration getDuration() {
+     return null;
+   }
+ 
+diff --git i/core/src/main/java/tc/oc/pgm/flag/state/Dropped.java w/core/src/main/java/tc/oc/pgm/flag/state/Dropped.java
+index e5e991b4f..f182129c5 100644
+--- i/core/src/main/java/tc/oc/pgm/flag/state/Dropped.java
++++ w/core/src/main/java/tc/oc/pgm/flag/state/Dropped.java
+@@ -38,7 +38,7 @@ public class Dropped extends Uncarried implements Missing {
+   }
+ 
+   @Override
+-  protected Duration getDuration() {
++  public Duration getDuration() {
+     return this.post.getRecoverTime();
+   }
+ 
+diff --git i/core/src/main/java/tc/oc/pgm/flag/state/Respawning.java w/core/src/main/java/tc/oc/pgm/flag/state/Respawning.java
+index 8bbd34233..91476b57b 100644
+--- i/core/src/main/java/tc/oc/pgm/flag/state/Respawning.java
++++ w/core/src/main/java/tc/oc/pgm/flag/state/Respawning.java
+@@ -45,7 +45,7 @@ public class Respawning extends Spawned implements Returning {
+   }
+ 
+   @Override
+-  protected Duration getDuration() {
++  public Duration getDuration() {
+     return respawnTime;
+   }
+ 
+@@ -94,8 +94,8 @@ public class Respawning extends Spawned implements Returning {
+       // Flag was dropped
+       this.respawn(translatable("flag.return", this.flag.getComponentName()));
+     } else if (this.wasDelayed) {
+-      // Flag was captured and respawn was delayed by a filter, so we announce that the flag has
+-      // respawned
++      // Flag was captured and respawn was delayed by a filter, so we announce
++      // that the flag has respawned
+       this.respawn(translatable("flag.respawn", this.flag.getComponentName()));
+     }
+   }
+diff --git i/core/src/main/java/tc/oc/pgm/listeners/FormattingListener.java w/core/src/main/java/tc/oc/pgm/listeners/FormattingListener.java
+index 067c8851c..1183966fa 100644
+--- i/core/src/main/java/tc/oc/pgm/listeners/FormattingListener.java
++++ w/core/src/main/java/tc/oc/pgm/listeners/FormattingListener.java
+@@ -66,7 +66,7 @@ public class FormattingListener implements Listener {
+                 destroyable.getOwner().getName()));
+   }
+ 
+-  private Component formatContributions(
++  public static Component formatContributions(
+       Collection<? extends Contribution> contributions, boolean showPercentage) {
+     List<? extends Contribution> sorted = new ArrayList<>(contributions);
+     sorted.sort(
+diff --git i/core/src/main/java/tc/oc/pgm/modes/ModeChangeCountdown.java w/core/src/main/java/tc/oc/pgm/modes/ModeChangeCountdown.java
+index aad875bff..5b1d78192 100644
+--- i/core/src/main/java/tc/oc/pgm/modes/ModeChangeCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/modes/ModeChangeCountdown.java
+@@ -53,7 +53,7 @@ public class ModeChangeCountdown extends MatchCountdown implements Comparable<Mo
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return translatable(
+         "objective.modeCountdown",
+         NamedTextColor.DARK_AQUA,
+@@ -82,7 +82,7 @@ public class ModeChangeCountdown extends MatchCountdown implements Comparable<Mo
+   }
+ 
+   @Override
+-  protected boolean showChat() {
++  public boolean showChat() {
+     return false;
+   }
+ }
+diff --git i/core/src/main/java/tc/oc/pgm/restart/RestartCountdown.java w/core/src/main/java/tc/oc/pgm/restart/RestartCountdown.java
+index bf63e45f3..225df0a4a 100644
+--- i/core/src/main/java/tc/oc/pgm/restart/RestartCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/restart/RestartCountdown.java
+@@ -18,7 +18,7 @@ public class RestartCountdown extends MatchCountdown {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     if (TimeUtils.isLongerThan(remaining, Duration.ZERO)) {
+       return translatable(
+           "countdown.restart", NamedTextColor.AQUA, secondsRemaining(NamedTextColor.DARK_RED));
+diff --git i/core/src/main/java/tc/oc/pgm/score/ScoreMatchModule.java w/core/src/main/java/tc/oc/pgm/score/ScoreMatchModule.java
+index 9e90433c0..e61b4275b 100644
+--- i/core/src/main/java/tc/oc/pgm/score/ScoreMatchModule.java
++++ w/core/src/main/java/tc/oc/pgm/score/ScoreMatchModule.java
+@@ -104,6 +104,10 @@ public class ScoreMatchModule implements MatchModule, Listener {
+     return this.scores.get(competitor);
+   }
+ 
++  public Set<ScoreBox> getScoreboxes() {
++    return this.scoreBoxes;
++  }
++
+   /** Gets the score message for the match. */
+   public Component getScoreMessage(MatchPlayer matchPlayer) {
+     List<Component> scoreMessages = Lists.newArrayList();
+@@ -307,7 +311,8 @@ public class ScoreMatchModule implements MatchModule, Listener {
+     match.callEvent(new MatchPlayerScoreEvent(mp, amount));
+ 
+     if (contribution <= PGM.get().getConfiguration().getGriefScore()) {
+-      // wait until the next tick to do this so stat recording and other stuff works
++      // wait until the next tick to do this so stat recording and other stuff
++      // works
+       match
+           .getExecutor(MatchScope.RUNNING)
+           .execute(
+diff --git i/core/src/main/java/tc/oc/pgm/start/HuddleCountdown.java w/core/src/main/java/tc/oc/pgm/start/HuddleCountdown.java
+index ef73efc21..9e239c57e 100644
+--- i/core/src/main/java/tc/oc/pgm/start/HuddleCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/start/HuddleCountdown.java
+@@ -20,7 +20,7 @@ public class HuddleCountdown extends PreMatchCountdown implements Listener {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return translatable(
+         "countdown.huddleEnd", NamedTextColor.YELLOW, secondsRemaining(NamedTextColor.DARK_RED));
+   }
+diff --git i/core/src/main/java/tc/oc/pgm/start/StartCountdown.java w/core/src/main/java/tc/oc/pgm/start/StartCountdown.java
+index ec9e266a1..f71b82a1c 100644
+--- i/core/src/main/java/tc/oc/pgm/start/StartCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/start/StartCountdown.java
+@@ -17,10 +17,11 @@ import tc.oc.pgm.util.TimeUtils;
+ /** Countdown to team huddle, or match start if huddle is disabled */
+ public class StartCountdown extends PreMatchCountdown {
+ 
+-  // At this duration before match start, broadcast a warning if teams will be auto-balanced
++  // At this duration before match start, broadcast a warning if teams will be
++  // auto-balanced
+   private static final Duration BALANCE_WARNING_TIME = Duration.ofSeconds(15);
+-  // TODO: Avoid coupling to the team module, either by subclassing this countdown,
+-  // or implementing some kind of countdown listener system.
++  // TODO: Avoid coupling to the team module, either by subclassing this
++  // countdown, or implementing some kind of countdown listener system.
+   private final @Nullable TeamMatchModule tmm;
+   private final Duration huddle;
+   private boolean autoBalanced, balanceWarningSent;
+@@ -38,7 +39,7 @@ public class StartCountdown extends PreMatchCountdown {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return translatable(
+         "countdown.matchStart", NamedTextColor.GREEN, secondsRemaining(NamedTextColor.DARK_RED));
+   }
+@@ -60,7 +61,8 @@ public class StartCountdown extends PreMatchCountdown {
+     super.onTick(remaining, total);
+ 
+     if (remaining.getSeconds() >= 1 && remaining.getSeconds() <= 3) {
+-      // Auto-balance runs at match start as well, but try to run it a few seconds in advance
++      // Auto-balance runs at match start as well, but try to run it a few
++      // seconds in advance
+       if (this.tmm != null && !this.autoBalanced) {
+         this.autoBalanced = true;
+         this.tmm.balanceTeams();
+diff --git i/core/src/main/java/tc/oc/pgm/timelimit/OvertimeCountdown.java w/core/src/main/java/tc/oc/pgm/timelimit/OvertimeCountdown.java
+index e26b51a21..6133ab4d7 100644
+--- i/core/src/main/java/tc/oc/pgm/timelimit/OvertimeCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/timelimit/OvertimeCountdown.java
+@@ -42,7 +42,7 @@ public class OvertimeCountdown extends TimeLimitCountdown {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return translatable(
+             "misc.overtime",
+             NamedTextColor.YELLOW,
+@@ -56,7 +56,7 @@ public class OvertimeCountdown extends TimeLimitCountdown {
+   }
+ 
+   @Override
+-  protected boolean showChat() {
++  public boolean showChat() {
+     return false;
+   }
+ 
+diff --git i/core/src/main/java/tc/oc/pgm/timelimit/TimeLimitCountdown.java w/core/src/main/java/tc/oc/pgm/timelimit/TimeLimitCountdown.java
+index b2e3ed72d..762b3178a 100644
+--- i/core/src/main/java/tc/oc/pgm/timelimit/TimeLimitCountdown.java
++++ w/core/src/main/java/tc/oc/pgm/timelimit/TimeLimitCountdown.java
+@@ -34,12 +34,12 @@ public class TimeLimitCountdown extends MatchCountdown {
+   }
+ 
+   @Override
+-  protected Component formatText() {
++  public Component formatText() {
+     return translatable("misc.timeRemaining", NamedTextColor.AQUA, colonTime());
+   }
+ 
+   @Override
+-  protected boolean showChat() {
++  public boolean showChat() {
+     return this.timeLimit.getShow() && super.showChat();
+   }
+ 

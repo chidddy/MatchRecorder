@@ -4,7 +4,6 @@ import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map.Entry;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.TranslatableComponent;
@@ -79,7 +78,7 @@ public class MatchListener implements Listener {
   public void onMatchEnd(MatchFinishEvent event) {
     Component message = null;
     if (event.getWinner() == null) {
-      message = TextTranslations.translate(translatable("broadcast.gameOver"), Locale.ENGLISH);
+      message = TextTranslations.translate(translatable("broadcast.gameOver"));
     } else {
       message =
           translatable(
@@ -108,8 +107,7 @@ public class MatchListener implements Listener {
                 "wool.complete.owned",
                 event.getPlayer().getName(NameStyle.COLOR),
                 event.getWool().getComponentName(),
-                event.getPlayer().getParty().getName()),
-            Locale.ENGLISH);
+                event.getPlayer().getParty().getName()));
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
@@ -125,8 +123,7 @@ public class MatchListener implements Listener {
                 "core.complete.owned",
                 FormattingListener.formatContributions(core.getContributions(), false),
                 core.getComponentName(),
-                core.getOwner().getName()),
-            Locale.ENGLISH);
+                core.getOwner().getName()));
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
@@ -142,16 +139,14 @@ public class MatchListener implements Listener {
                   "destroyable.touch.owned.player",
                   event.getPlayer().getName(NameStyle.COLOR),
                   event.getGoal().getComponentName(),
-                  event.getGoal().getOwner().getName()),
-              Locale.ENGLISH);
+                  event.getGoal().getOwner().getName()));
     } else if (event.getGoal() instanceof Flag) {
       message =
           TextTranslations.translate(
               translatable(
                   "flag.touch.player",
                   event.getGoal().getComponentName(),
-                  event.getPlayer().getName(NameStyle.COLOR)),
-              Locale.ENGLISH);
+                  event.getPlayer().getName(NameStyle.COLOR)));
     } else {
       message =
           TextTranslations.translate(
@@ -159,8 +154,7 @@ public class MatchListener implements Listener {
                   "destroyable.touch.owned.player",
                   event.getPlayer().getName(NameStyle.COLOR),
                   event.getGoal().getComponentName(),
-                  event.getGoal().getOwner().getName()),
-              Locale.ENGLISH);
+                  event.getGoal().getOwner().getName()));
     }
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
@@ -178,8 +172,7 @@ public class MatchListener implements Listener {
                 FormattingListener.formatContributions(
                     event.getDestroyable().getContributions(), true),
                 destroyable.getComponentName(),
-                destroyable.getOwner().getName()),
-            Locale.ENGLISH);
+                destroyable.getOwner().getName()));
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
@@ -222,8 +215,7 @@ public class MatchListener implements Listener {
     recorder.stopBlinkingGoal(event.getFlag());
     if (state instanceof Dropped) {
       message =
-          TextTranslations.translate(
-              translatable("flag.drop", event.getFlag().getComponentName()), Locale.ENGLISH);
+          TextTranslations.translate(translatable("flag.drop", event.getFlag().getComponentName()));
       if (TimeUtils.isInfinite(state.getDuration())) {
         this.recorder.blinkGoal(event.getFlag(), 2, null);
       }
@@ -232,10 +224,9 @@ public class MatchListener implements Listener {
           TextTranslations.translate(
               event.getOldState() instanceof Dropped
                   ? translatable("flag.respawn", event.getFlag().getComponentName())
-                  : translatable("flag.return", event.getFlag().getComponentName()),
-              Locale.ENGLISH);
+                  : translatable("flag.return", event.getFlag().getComponentName()));
     } else if (state instanceof Respawning) {
-      TranslatableComponent.Builder time =
+      TranslatableComponent time =
           TemporalComponent.duration(state.getDuration(), NamedTextColor.AQUA);
       String postName = state.getPost().getPostName();
       message =
@@ -246,8 +237,7 @@ public class MatchListener implements Listener {
                       event.getFlag().getComponentName(),
                       text(postName, NamedTextColor.AQUA),
                       time)
-                  : translatable("flag.willRespawn", event.getFlag().getComponentName(), time),
-              Locale.ENGLISH);
+                  : translatable("flag.willRespawn", event.getFlag().getComponentName(), time));
     } else if (state instanceof Carried) {
       recorder.blinkGoal(event.getGoal(), 2, null);
     } else {
@@ -264,8 +254,7 @@ public class MatchListener implements Listener {
             translatable(
                 "flag.capture.player",
                 event.getGoal().getComponentName(),
-                event.getCarrier().getName(NameStyle.COLOR)),
-            Locale.ENGLISH);
+                event.getCarrier().getName(NameStyle.COLOR)));
     recorder.addPacket(PacketBuilder.createChatPacket(message));
   }
 
@@ -366,8 +355,7 @@ public class MatchListener implements Listener {
                     translatable(
                         wholePoints == 1 ? "misc.point" : "misc.points",
                         text(wholePoints, NamedTextColor.DARK_AQUA)),
-                    player.getParty().getName()),
-                Locale.ENGLISH)));
+                    player.getParty().getName()))));
   }
 
   @EventHandler(priority = EventPriority.MONITOR)
@@ -383,7 +371,7 @@ public class MatchListener implements Listener {
                   if (countdown.showChat() && recorder.isRecording()) {
                     recorder.addPacket(
                         PacketBuilder.createChatPacket(
-                            TextTranslations.translate(countdown.formatText(), Locale.ENGLISH)));
+                            TextTranslations.translate(countdown.formatText())));
                   }
                 },
                 0,

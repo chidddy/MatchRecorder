@@ -1,17 +1,17 @@
 package tc.oc.occ.matchrecorder;
 
+import static net.kyori.adventure.text.Component.empty;
+import static net.kyori.adventure.text.Component.space;
 import static net.kyori.adventure.text.Component.text;
 import static net.kyori.adventure.text.Component.translatable;
 
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -19,10 +19,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import javax.annotation.Nullable;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.format.TextColor;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import org.bukkit.ChatColor;
 import tc.oc.pgm.api.Config;
@@ -41,6 +42,7 @@ import tc.oc.pgm.goals.ProximityGoal;
 import tc.oc.pgm.goals.ShowOption;
 import tc.oc.pgm.score.ScoreMatchModule;
 import tc.oc.pgm.util.TimeUtils;
+import tc.oc.pgm.util.named.NameStyle;
 import tc.oc.pgm.util.text.TextFormatter;
 import tc.oc.pgm.util.text.TextTranslations;
 import tc.oc.pgm.wool.MonumentWool;
@@ -58,7 +60,7 @@ public class SideBarGenerator {
   private static final int MAX_TEAM = 16; // Max characters per team name
   private static final int MAX_TITLE = 32; // Max characters allowed in title
   private final List<String> rows = new ArrayList<String>(MAX_ROWS);
-  private final Map<Goal, BlinkTask> blinkingGoals = new HashMap<>();
+  private final Map<Goal<?>, BlinkTask> blinkingGoals = new HashMap<>();
 
   public SideBarGenerator(Replay recorder, Match match) {
     this.recorder = recorder;
@@ -73,8 +75,7 @@ public class SideBarGenerator {
             LegacyComponentSerializer.legacySection()
                 .serialize(
                     TextTranslations.translate(
-                        this.constructHeader(PGM.get().getConfiguration(), this.match.getMap()),
-                        Locale.ENGLISH))));
+                        this.constructHeader(PGM.get().getConfiguration(), this.match.getMap())))));
     recorder.addPacket(PacketBuilder.createScoreboardDisplayObjectivePacket(this.baseString));
     IntStream.range(0, MAX_ROWS)
         .forEach(
@@ -96,10 +97,10 @@ public class SideBarGenerator {
     }
   }
 
-  public void displayUpdatedSidebar(List<String> new_rows) {
+  public void displayUpdatedSidebar(List<Component> new_rows) {
     for (int i = 0; i < MAX_ROWS; i++) {
       String cached_row = this.rows.get(i);
-      String row = new_rows.get(i);
+      String row = LegacyComponentSerializer.legacySection().serialize(new_rows.get(i));
       if (cached_row.equalsIgnoreCase(row)) continue;
       this.rows.set(i, row);
       if (row.equalsIgnoreCase(this.baseString + ":" + i)) {
@@ -184,7 +185,7 @@ public class SideBarGenerator {
   }
 
   private Component constructHeader(final Config config, final MapInfo map) {
-    final Component header = config.getMatchHeader();
+    final Component header = PGM.get().getConfiguration().getMatchHeader();
     if (header != null) {
       return header.colorIfAbsent(NamedTextColor.AQUA);
     }
@@ -196,16 +197,17 @@ public class SideBarGenerator {
 
     final Collection<Gamemode> gamemodes = map.getGamemodes();
     if (!gamemodes.isEmpty()) {
-      String suffix = gamemodes.size() <= 1 ? ".name" : ".acronym";
+      boolean acronyms = gamemodes.size() > 1;
       List<Component> gmComponents =
           gamemodes.stream()
-              .map(gm -> translatable("gamemode." + gm.getId() + suffix))
+              .map(gm -> text(acronyms ? gm.getAcronym() : gm.getFullName()))
               .collect(Collectors.toList());
       return TextFormatter.list(gmComponents, NamedTextColor.AQUA);
     }
 
     final List<Component> games = new LinkedList<>();
 
+    // First, find a primary game mode
     for (final MapTag tag : map.getTags()) {
       if (!tag.isGamemode() || tag.isAuxiliary()) continue;
 
@@ -214,13 +216,16 @@ public class SideBarGenerator {
         continue;
       }
 
+      // When there are multiple, primary game modes
       games.set(0, translatable("gamemode.generic.name", NamedTextColor.AQUA));
       break;
     }
 
+    // Second, append auxiliary game modes
     for (final MapTag tag : map.getTags()) {
       if (!tag.isGamemode() || !tag.isAuxiliary()) continue;
 
+      // There can only be 2 game modes
       if (games.size() < 2) {
         games.add(tag.getName().color(NamedTextColor.AQUA));
       } else {
@@ -228,70 +233,83 @@ public class SideBarGenerator {
       }
     }
 
+    // Display "Blitz: Rage" rather than "Blitz and Rage"
+    if (games.size() == 2
+        && Stream.of("blitz", "rage")
+            .allMatch(id -> map.getTags().stream().anyMatch(mt -> mt.getId().equals(id)))) {
+      games.clear();
+      games.add(text(Gamemode.BLITZ_RAGE.getFullName(), NamedTextColor.AQUA));
+    }
+
     return TextFormatter.list(games, NamedTextColor.AQUA);
   }
 
-  private String renderScore(Competitor competitor) {
-    ScoreMatchModule smm = competitor.getMatch().needModule(ScoreMatchModule.class);
-    String text = ChatColor.WHITE.toString() + (int) smm.getScore(competitor);
-    if (smm.hasScoreLimit()) {
-      text += ChatColor.DARK_GRAY + "/" + ChatColor.GRAY + smm.getScoreLimit();
+  private Component renderScore(Competitor competitor) {
+    ScoreMatchModule smm = match.needModule(ScoreMatchModule.class);
+    if (!smm.getScoreboardFilter().response(competitor)) {
+      return null;
     }
-    return text;
+    Component score = text((int) smm.getScore(competitor), NamedTextColor.WHITE);
+    if (!smm.hasScoreLimit()) {
+      return score;
+    }
+    return text()
+        .append(score)
+        .append(text("/", NamedTextColor.DARK_GRAY))
+        .append(text(smm.getScoreLimit(), NamedTextColor.GRAY))
+        .build();
   }
 
-  private String renderBlitz(Competitor competitor) {
-    BlitzMatchModule bmm = competitor.getMatch().needModule(BlitzMatchModule.class);
-    if (competitor instanceof tc.oc.pgm.teams.Team) {
-      return ChatColor.WHITE.toString() + bmm.getRemainingPlayers(competitor);
+  private Component renderBlitz(Competitor competitor) {
+    BlitzMatchModule bmm = this.match.getMatch().needModule(BlitzMatchModule.class);
+    if (!bmm.getConfig().getScoreboardFilter().response(competitor)) {
+      return null;
+    } else if (competitor instanceof tc.oc.pgm.teams.Team) {
+      return text(bmm.getRemainingPlayers(competitor), NamedTextColor.WHITE);
     } else if (competitor instanceof Tribute && bmm.getConfig().getNumLives() > 1) {
-      return ChatColor.WHITE.toString()
-          + bmm.getNumOfLives(competitor.getPlayers().iterator().next().getId());
+      final UUID id = competitor.getPlayers().iterator().next().getId();
+      return text(bmm.getNumOfLives(id), NamedTextColor.WHITE);
     } else {
-      return "";
+      return empty();
     }
   }
 
   private String renderTeam(Competitor competitor) {
     return LegacyComponentSerializer.legacySection()
-        .serialize(TextTranslations.translate(competitor.getName(), Locale.ENGLISH));
+        .serialize(TextTranslations.translate(competitor.getName()));
   }
 
-  private String renderGoal(Goal<?> goal, @Nullable Competitor competitor) {
-    StringBuilder sb = new StringBuilder(" ");
+  private Component renderGoal(Goal<?> goal, @Nullable Competitor competitor) {
+    final BlinkTask blinkTask = this.blinkingGoals.get(goal);
+    final TextComponent.Builder line = text();
 
-    BlinkTask blinkTask = this.blinkingGoals.get(goal);
-    if (blinkTask != null && blinkTask.isDark()) {
-      sb.append(ChatColor.BLACK);
-    } else {
-      sb.append(goal.renderSidebarStatusColor(competitor, this.match.getDefaultParty()));
-    }
-    sb.append(goal.renderSidebarStatusText(competitor, this.match.getDefaultParty()));
+    line.append(space());
+    line.append(
+        goal.renderSidebarStatusText(competitor, this.match.getDefaultParty())
+            .color(
+                blinkTask != null && blinkTask.isDark()
+                    ? NamedTextColor.BLACK
+                    : goal.renderSidebarStatusColor(competitor, this.match.getDefaultParty())));
 
     if (goal instanceof ProximityGoal) {
-      String proximity =
-          ((ProximityGoal) goal).renderProximity(competitor, this.match.getDefaultParty());
-
-      if (!proximity.isEmpty()) sb.append(" ").append(proximity);
+      final ProximityGoal<?> proximity = (ProximityGoal<?>) goal;
+      if (proximity.shouldShowProximity(competitor, this.match.getDefaultParty())) {
+        line.append(space());
+        line.append(proximity.renderProximity(competitor, this.match.getDefaultParty()));
+      }
     }
-    sb.append(" ");
-    final TextColor color =
-        TextFormatter.convert(
-            goal.renderSidebarLabelColor(competitor, this.match.getDefaultParty()));
-    sb.append(
-        LegacyComponentSerializer.legacySection()
-            .serialize(
-                TextTranslations.translate(
-                    goal.renderSidebarLabelText(competitor, this.match.getDefaultParty())
-                        .color(color),
-                    Locale.ENGLISH)));
 
-    return sb.toString();
+    line.append(space());
+    line.append(
+        goal.renderSidebarLabelText(competitor, this.match.getDefaultParty())
+            .color(goal.renderSidebarLabelColor(competitor, this.match.getDefaultParty())));
+
+    return line.build();
   }
 
-  public List<String> constructSidebar() {
-    final boolean hasScores = hasScores();
-    final boolean isBlitz = isBlitz();
+  public List<Component> constructSidebar() {
+    final boolean hasScores = match.getModule(ScoreMatchModule.class) != null;
+    final boolean isBlitz = match.getModule(BlitzMatchModule.class) != null;
     final boolean isCompactWool = isCompactWool();
     final GoalMatchModule gmm = match.needModule(GoalMatchModule.class);
 
@@ -299,7 +317,8 @@ public class SideBarGenerator {
     List<Goal<?>> sharedGoals = new ArrayList<>();
 
     for (Goal<?> goal : gmm.getGoals()) {
-      if (goal.hasShowOption(ShowOption.SHOW_SIDEBAR)) {
+      if (goal.hasShowOption(ShowOption.SHOW_SIDEBAR)
+          && goal.getScoreboardFilter().response(match)) {
         if (goal.isShared()) {
           sharedGoals.add(goal);
         } else {
@@ -309,32 +328,33 @@ public class SideBarGenerator {
     }
     final boolean isSuperCompact = isSuperCompact(competitorsWithGoals);
 
-    final List<String> rows = new ArrayList<>(MAX_ROWS);
+    final List<Component> rows = new ArrayList<>(MAX_ROWS);
     if (hasScores || isBlitz) {
       for (Competitor competitor : match.getSortedCompetitors()) {
-        String text;
+        Component text;
         if (hasScores) {
           text = renderScore(competitor);
         } else {
           text = renderBlitz(competitor);
         }
-        if (text.length() != 0) text += " ";
-        rows.add(
-            text
-                + LegacyComponentSerializer.legacySection()
-                    .serialize(TextTranslations.translate(competitor.getName(), Locale.ENGLISH)));
+        if (text != null) {
+          if (text != empty()) {
+            text = text.append(space());
+          }
+          rows.add(text.append(competitor.getName(NameStyle.SIMPLE_COLOR)));
 
-        if (rows.size() >= MAX_ROWS) break;
+          if (rows.size() >= MAX_ROWS) break;
+        }
       }
 
       if (!competitorsWithGoals.isEmpty() || !sharedGoals.isEmpty()) {
-        rows.add("");
+        rows.add(empty());
       }
     }
 
     boolean firstTeam = true;
 
-    for (Goal goal : sharedGoals) {
+    for (Goal<?> goal : sharedGoals) {
       firstTeam = false;
       rows.add(this.renderGoal(goal, null));
     }
@@ -342,42 +362,43 @@ public class SideBarGenerator {
     List<Competitor> sortedCompetitors = new ArrayList<>(match.getSortedCompetitors());
     sortedCompetitors.retainAll(competitorsWithGoals);
     for (Competitor competitor : sortedCompetitors) {
-      if (!(rows.size() + 2 < MAX_ROWS)) break;
+      if ((rows.size() + 2) >= MAX_ROWS) break;
 
       if (!(firstTeam || isSuperCompact)) {
-        rows.add("");
+        rows.add(empty());
       }
       firstTeam = false;
 
-      rows.add(this.renderTeam(competitor));
+      rows.add(competitor.getName());
 
       if (isCompactWool) {
         boolean firstWool = true;
 
         List<Goal> sortedWools = new ArrayList<>(gmm.getGoals(competitor));
-        Collections.sort(sortedWools, (a, b) -> a.getName().compareToIgnoreCase(b.getName()));
+        sortedWools.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
 
         boolean horizontalCompact =
             MAX_LENGTH < (3 * sortedWools.size()) + (3 * (sortedWools.size() - 1)) + 1;
-        String woolText = "";
-        if (!horizontalCompact) {
-          woolText += " ";
-        }
-
+        TextComponent.Builder woolText = text();
         for (Goal<?> goal : sortedWools) {
           if (goal instanceof MonumentWool && goal.hasShowOption(ShowOption.SHOW_SIDEBAR)) {
             MonumentWool wool = (MonumentWool) goal;
-            woolText += " ";
-            if (!firstWool && !horizontalCompact) woolText += "  ";
+            TextComponent spacer = space();
+            if (!firstWool && !horizontalCompact) {
+              spacer = spacer.append(space()).append(space());
+            }
             firstWool = false;
-            woolText += wool.renderSidebarStatusColor(competitor, this.match.getDefaultParty());
-            woolText += wool.renderSidebarStatusText(competitor, this.match.getDefaultParty());
+            woolText.append(
+                spacer
+                    .append(wool.renderSidebarStatusText(competitor, this.match.getDefaultParty()))
+                    .color(
+                        wool.renderSidebarStatusColor(competitor, this.match.getDefaultParty())));
           }
         }
-        rows.add(woolText);
+        rows.add(woolText.build());
 
       } else {
-        for (Goal goal : gmm.getGoals()) {
+        for (Goal<?> goal : gmm.getGoals()) {
           if (!goal.isShared()
               && goal.canComplete(competitor)
               && goal.hasShowOption(ShowOption.SHOW_SIDEBAR)) {
@@ -389,21 +410,15 @@ public class SideBarGenerator {
     final Component footer = PGM.get().getConfiguration().getMatchFooter();
     if (footer != null) {
       if (rows.size() < MAX_ROWS - 2) {
-        rows.add("");
+        rows.add(empty());
       }
-      rows.add(
-          LegacyComponentSerializer.legacySection()
-              .serialize(TextTranslations.translate(footer, Locale.ENGLISH)));
+      rows.add(footer);
     }
 
-    Collections.reverse(rows);
-    for (int i = rows.size(); i < MAX_ROWS; i++) {
-      rows.add(this.baseString + ":" + i);
-    }
     return rows;
   }
 
-  public void blinkGoal(Goal goal, float rateHz, @Nullable Duration duration) {
+  public void blinkGoal(Goal<?> goal, float rateHz, @Nullable Duration duration) {
     BlinkTask task = this.blinkingGoals.get(goal);
     if (task != null) {
       task.reset(duration);
@@ -412,7 +427,7 @@ public class SideBarGenerator {
     }
   }
 
-  public void stopBlinkingGoal(Goal goal) {
+  public void stopBlinkingGoal(Goal<?> goal) {
     BlinkTask task = this.blinkingGoals.remove(goal);
     if (task != null) task.stop();
   }
@@ -420,13 +435,13 @@ public class SideBarGenerator {
   private class BlinkTask implements Runnable {
 
     private final Future<?> task;
-    private final Goal goal;
+    private final Goal<?> goal;
     private final long intervalTicks;
 
     private boolean dark;
     private Long ticksRemaining;
 
-    private BlinkTask(Goal goal, float rateHz, @Nullable Duration duration) {
+    private BlinkTask(Goal<?> goal, float rateHz, @Nullable Duration duration) {
       this.goal = goal;
       this.intervalTicks = (long) (10f / rateHz);
       this.task =
